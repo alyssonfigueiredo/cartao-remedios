@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cartão de Remédios — gerador (P&B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+  /* Paleta/tokens iguais ao soaperando (assets/tokens.css) — mesma identidade
+     visual entre as duas ferramentas do consultório. */
+  :root{
+    --brand:            #0f766e;
+    --brand-strong:     #0c5e54;
+    --brand-deep:       #0a4f47;
+    --grad-brand:       linear-gradient(120deg, #0a4f47, #13796b);
+
+    --accent-mint:      #7fe3c8;
+    --accent-mint-ink:  #0a463f;
+
+    --bg:               #eaeff1;
+    --surface:          #ffffff;
+    --surface-soft:     #f7faf9;
+    --surface-muted:    #f3f6f7;
+    --surface-brand:    #e6f3ef;
+    --surface-brand-2:  #e2f1ed;
+
+    --text:             #16252b;
+    --text-2:           #5a6c73;
+    --text-muted:       #7a8b92;
+    --text-faint:       #9fb0b8;
+
+    --border:           #e6ecee;
+    --border-soft:      #e2e8ec;
+    --border-strong:    #c2d8d0;
+
+    --danger:           #dc2626;
+    --danger-strong:    #b42318;
+    --danger-soft:      #fee2e2;
+    --warn:             #d97706;
+    --warn-soft:        #fef3c7;
+    --warn-ink:         #9a6a23;
+    --ok:               #1f8a5b;
+
+    --shadow-sm:        0 1px 3px rgba(0,0,0,.08);
+    --shadow-cta:       0 5px 16px rgba(15,118,110,.28);
+
+    --r-sm:   9px;
+    --r-md:   10px;
+    --r-lg:   12px;
+    --r-xl:   14px;
+    --r-2xl:  16px;
+    --r-pill: 999px;
+
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* impressão continua preta/quase-preta independente do tema — prioridade P&B */
+    --ink:#1c1c1c;
+    --paper:#ffffff;
+    --muted:var(--text-muted);
+    --panel:var(--surface-muted);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-sans);
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    flex-wrap:wrap;
+    gap:24px;
+    justify-content:center;
+    padding:24px;
+  }
+
+  /* ---------- painel de edicao (nao imprime) ---------- */
+  #controls{
+    width:400px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--r-2xl);
+    box-shadow:var(--shadow-sm);
+    padding:20px;
+    height:fit-content;
+  }
+  #controls h1{font-size:18px; font-weight:800; letter-spacing:-.01em; color:var(--brand-deep); margin:0 0 4px;}
+  #controls p.sub{margin:0 0 16px; font-size:12.5px; color:var(--text-muted); line-height:1.5;}
+  #controls label{
+    display:block; margin:14px 0 5px;
+    font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted);
+  }
+  #controls input[type=text], #controls input[type=number], #controls select, #controls textarea{
+    width:100%; padding:8px 10px; border:1px solid var(--border-soft); background:var(--surface-soft);
+    border-radius:var(--r-md); font-size:13px; font-family:inherit; color:var(--text);
+  }
+  #controls input:focus, #controls select:focus, #controls textarea:focus{
+    outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(15,118,110,.14); background:var(--surface);
+  }
+  #controls textarea{resize:vertical; min-height:40px;}
+  hr.sep{border:none; border-top:1px solid var(--border-soft); margin:18px 0;}
+
+  .modo-box{
+    background:var(--surface-brand); border:1px solid var(--border-strong); border-radius:var(--r-lg); padding:10px 12px; margin-bottom:16px;
+  }
+  .modo-box label{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; text-transform:none; letter-spacing:0; margin:0; color:var(--brand-strong);}
+  .modo-box input{width:auto;}
+  .modo-box .desc{font-size:11px; color:var(--text-muted); margin-top:5px; font-weight:400; line-height:1.4; text-transform:none;}
+
+  .med-form{background:var(--surface-muted); border:1px solid var(--border-soft); border-radius:var(--r-lg); padding:14px;}
+  .row2{display:flex; gap:10px;}
+  .row2 > div{flex:1;}
+  .turnos{display:flex; gap:10px; margin-top:6px;}
+  .turnos label{display:flex; align-items:center; gap:5px; font-weight:600; font-size:12.5px; text-transform:none; letter-spacing:0; margin:0; color:var(--text);}
+  .turnos input{width:auto; margin:0;}
+
+  #addBtn{
+    margin-top:14px; width:100%; padding:11px; background:var(--surface); color:var(--brand-strong); border:1.5px solid var(--brand);
+    border-radius:var(--r-lg); font-size:13.5px; font-weight:800; cursor:pointer;
+  }
+  #addBtn:hover{background:#f1f9f6;}
+
+  #medList{margin-top:16px; display:flex; flex-direction:column; gap:8px;}
+  .med-chip{display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:var(--r-md); padding:7px 9px; font-size:12.5px; background:var(--surface);}
+  .med-chip .ico{width:20px; height:20px; flex-shrink:0;}
+  .med-chip .info{flex:1;}
+  .med-chip .info b{display:block; font-size:12.5px; color:var(--text);}
+  .med-chip .info span{color:var(--text-muted); font-size:11px;}
+  .med-chip button{border:none; background:none; color:var(--danger-strong); font-size:16px; cursor:pointer; line-height:1; padding:2px 4px;}
+
+  #printBtn{
+    margin-top:20px; width:100%; padding:13px; background:var(--grad-brand); color:#fff; border:none;
+    border-radius:var(--r-lg); font-size:14.5px; font-weight:800; cursor:pointer; box-shadow:var(--shadow-cta);
+  }
+  #printBtn:hover{filter:brightness(1.06);}
+  .hint{font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.5;}
+
+  /* ---------- folha imprimivel ---------- */
+  #sheet{
+    width:210mm; min-height:297mm; background:var(--paper); padding:14mm;
+    box-shadow:0 0 0 1px var(--border), var(--shadow-sm);
+  }
+  .head{text-align:center; margin-bottom:6mm;}
+  .head h2{font-size:22px; font-weight:800; margin:0 0 2mm; letter-spacing:.5px; color:var(--ink); font-family:var(--font-sans);}
+  .head .paciente{font-size:15px; font-weight:700; margin:0 0 2mm; color:var(--ink);}
+  .head .obs{font-size:10px; color:var(--muted);}
+  .head .obs[contenteditable], .paciente[contenteditable], h2[contenteditable]{outline:none; border-bottom:1px dashed transparent;}
+  .head .obs:hover, .paciente:hover, h2:hover{border-bottom:1px dashed #bbb;}
+
+  .turno-box{border:2px solid var(--ink); border-radius:5mm; margin-bottom:8mm; overflow:hidden;}
+  .turno-band{background:var(--panel); display:flex; align-items:center; justify-content:space-between; padding:5mm 6mm;}
+  .turno-band .left{display:flex; align-items:center; gap:4mm;}
+  .turno-band .titulo{font-size:16px; font-weight:800; font-family:var(--font-sans); color:var(--ink);}
+  .turno-band .total{font-size:12px; font-weight:700; color:var(--muted);}
+
+  .turno-grid{display:flex; flex-wrap:wrap; gap:6mm; padding:7mm 6mm 9mm;}
+  .med-card{width:40mm; text-align:center;}
+  .glyph-wrap{width:26mm; height:26mm; margin:0 auto 2mm; display:flex; align-items:center; justify-content:center;}
+  .marcar-caixa{font-size:8px; color:#777; margin-bottom:2.5mm; line-height:1.3;}
+  .contagem{display:flex; justify-content:center; gap:1.4mm; margin-bottom:2.5mm; flex-wrap:wrap;}
+  .contagem .pip{width:3.2mm; height:3.2mm; border-radius:50%; background:#000; display:inline-block;}
+  .med-name{font-size:11px; font-weight:700; line-height:1.25; color:var(--ink); font-family:var(--font-sans);}
+  .med-dose{font-size:9px; color:var(--muted); margin-top:1mm;}
+
+  .foot{text-align:center; font-size:9px; color:var(--muted); margin-top:4mm;}
+  .foot[contenteditable]:hover{border-bottom:1px dashed #bbb;}
+
+  .empty-msg{padding:10mm; text-align:center; color:var(--text-faint); font-size:11px;}
+
+  /* ---------- importar receita ---------- */
+  .import-box{background:var(--surface-brand); border:1px solid var(--border-strong); border-radius:var(--r-lg); padding:12px;}
+  .import-box label{margin-top:0;}
+  .import-box .desc{font-size:11px; color:var(--text-muted); margin:0 0 8px; line-height:1.4; text-transform:none; font-weight:400;}
+  .import-box input[type=file]{width:100%; font-size:11.5px; margin-bottom:8px; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--r-sm); padding:6px;}
+  #receitaBtn{width:100%; padding:9px; background:var(--brand); color:#fff; border:none; border-radius:var(--r-md); font-size:12.5px; font-weight:700; cursor:pointer;}
+  #receitaBtn:hover:not(:disabled){filter:brightness(1.06);}
+  #receitaBtn:disabled{opacity:.6; cursor:default;}
+  #receitaStatus{font-size:11px; color:var(--text-muted); margin-top:6px; min-height:14px;}
+  #receitaTextoBox{display:none; margin-top:10px;}
+  #receitaTextoBox label{margin-top:0;}
+  #receitaTexto{min-height:70px; font-size:11px;}
+  #reprocessarBtn{margin-top:6px; width:100%; padding:7px; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--r-md); font-size:11.5px; font-weight:600; color:var(--text-2); cursor:pointer;}
+  #reprocessarBtn:hover{background:var(--surface-muted);}
+  #candidatosList{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .candidato-chip{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:8px; font-size:11.5px;}
+  .candidato-chip .cand-linha{display:flex; gap:6px; align-items:center;}
+  .candidato-chip .cand-nome{flex:1; padding:6px 8px; border:1px solid var(--border-soft); border-radius:var(--r-sm); font-size:11.5px; background:var(--surface-soft);}
+  .candidato-chip .cand-qtd{padding:6px; border:1px solid var(--border-soft); border-radius:var(--r-sm); background:var(--surface-soft);}
+  .cand-turnos{display:flex; gap:6px; white-space:nowrap;}
+  .cand-turnos label{display:flex; align-items:center; gap:2px; font-weight:500; text-transform:none; color:var(--text);}
+  .cand-turnos input{width:auto; margin:0;}
+  .candidato-chip .cand-add{margin-top:6px; width:100%; padding:6px; background:var(--brand); color:#fff; border:none; border-radius:var(--r-sm); font-size:11px; font-weight:700; cursor:pointer;}
+  .candidato-chip .cand-add:hover:not(:disabled){filter:brightness(1.06);}
+  .candidato-chip .cand-add:disabled{background:var(--ok); cursor:default;}
+  .cand-fonte{color:var(--text-faint); font-size:10px; margin-top:5px; font-style:italic;}
+  .cand-alerta{color:var(--danger-strong); font-size:10.5px; margin-top:5px; font-weight:700;}
+
+  @media print{
+    body{background:#fff; padding:0; display:block;}
+    #controls, #printBtn, .no-print{display:none !important;}
+    #sheet{box-shadow:none; width:auto; min-height:0; padding:10mm; margin:0;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===================== PAINEL DE EDICAO ===================== -->
+  <div id="controls" class="no-print">
+    <h1>Gerador de cartão de remédios</h1>
+    <p class="sub">Cada remédio recebe um <b>símbolo geométrico</b> diferente (não depende de cor). Peça para alguém desenhar o mesmo símbolo, com caneta, na caixa real do remédio — o paciente casa o símbolo do cartão com o da caixa, mesmo em preto e branco.</p>
+
+    <div class="modo-box">
+      <label><input type="checkbox" id="modoCor"> Esta unidade tem impressora colorida</label>
+      <div class="desc">Se marcar, os símbolos ganham cor como reforço extra. Se deixar desmarcado (padrão), tudo é desenhado só em preto e branco — e continua funcionando igual.</div>
+    </div>
+
+    <label>Nome do paciente</label>
+    <input type="text" id="pacienteInput" placeholder="Nome completo" value="">
+
+    <hr class="sep">
+
+    <div class="import-box">
+      <label style="margin-top:0">📷 Importar de receita (foto ou PDF)</label>
+      <div class="desc">A leitura é automática e pode errar nome, dose ou horário — confira e ajuste cada item antes de clicar em "adicionar". Nada é incluído no cartão sem essa confirmação.</div>
+      <input type="file" id="receitaInput" accept="image/*,application/pdf">
+      <button id="receitaBtn" type="button">Ler receita</button>
+      <div id="receitaStatus"></div>
+      <div id="receitaTextoBox">
+        <label>Texto lido (edite se algo saiu errado e clique em reprocessar)</label>
+        <textarea id="receitaTexto"></textarea>
+        <button id="reprocessarBtn" type="button">↻ Reprocessar texto acima</button>
+      </div>
+      <div id="candidatosList"></div>
+    </div>
+
+    <hr class="sep">
+
+    <div class="med-form">
+      <label style="margin-top:0">Nome do medicamento + dose</label>
+      <input type="text" id="medNome" placeholder="Ex.: Atenolol 50mg">
+
+      <div class="row2">
+        <div>
+          <label>Símbolo</label>
+          <select id="medForma">
+            <option value="auto">Automático</option>
+          </select>
+        </div>
+        <div>
+          <label>Comprimidos por tomada</label>
+          <input type="number" id="medQtd" value="1" min="1" max="9">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>Cor (opcional, só reforço)</label>
+          <input type="color" id="medCor" value="#0f766e" style="height:34px; padding:2px; border:1px solid var(--border-soft); border-radius:var(--r-sm);">
+        </div>
+        <div>
+          <label>Posologia (texto livre)</label>
+          <input type="text" id="medDose" placeholder="Ex.: uso contínuo">
+        </div>
+      </div>
+
+      <label>Tomar em qual turno?</label>
+      <div class="turnos">
+        <label><input type="checkbox" id="tManha" checked> Manhã</label>
+        <label><input type="checkbox" id="tTarde"> Tarde</label>
+        <label><input type="checkbox" id="tNoite"> Noite</label>
+      </div>
+
+      <button id="addBtn" type="button">+ Adicionar medicamento</button>
+    </div>
+
+    <div id="medList"></div>
+
+    <hr class="sep">
+
+    <label>Rodapé (médico / unidade)</label>
+    <textarea id="rodapeInput">Dr. Alysson Dyego de Figueiredo de Araujo - CRM-PR 49769 - Estratégia de Saúde da Família - Agudos do Sul/PR</textarea>
+
+    <button id="printBtn" type="button">🖨 Imprimir / salvar PDF</button>
+    <p class="hint">A folha ao lado é o que será impresso. Nada aqui fica salvo — ao fechar a página, comece de novo para o próximo paciente.</p>
+  </div>
+
+  <!-- ===================== FOLHA IMPRIMIVEL ===================== -->
+  <div id="sheet">
+    <div class="head">
+      <h2 contenteditable="true">MEUS REMÉDIOS</h2>
+      <div class="paciente" contenteditable="true" id="pacienteOut">NOME DO PACIENTE</div>
+      <div class="obs" contenteditable="true">Peça para alguém desenhar, com caneta, o mesmo símbolo de cada remédio na caixa real</div>
+    </div>
+
+    <div id="turnosOut"></div>
+
+    <div class="foot" contenteditable="true" id="rodapeOut">Dr. Alysson Dyego de Figueiredo de Araujo - CRM-PR 49769 - Estratégia de Saúde da Família - Agudos do Sul/PR</div>
+  </div>
+
+<!-- OCR (foto) e extração de texto de PDF — só rodam no navegador do usuário, nada sobe pra servidor -->
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+if(typeof pdfjsLib !== 'undefined'){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+}
+</script>
+<script>
+/* ---------------- formas (funcionam sem cor) ---------------- */
+const SHAPES = [
+  {id:'circulo',   nome:'Círculo',    draw:(id)=>`<circle cx="50" cy="50" r="38" fill="url(#${id})" stroke="#000" stroke-width="5"/>`},
+  {id:'quadrado',  nome:'Quadrado',   draw:(id)=>`<rect x="16" y="16" width="68" height="68" fill="url(#${id})" stroke="#000" stroke-width="5"/>`},
+  {id:'triangulo', nome:'Triângulo',  draw:(id)=>`<polygon points="50,10 92,85 8,85" fill="url(#${id})" stroke="#000" stroke-width="5" stroke-linejoin="round"/>`},
+  {id:'estrela',   nome:'Estrela',    draw:(id)=>`<polygon points="${starPoints(50,50,38,16,5)}" fill="url(#${id})" stroke="#000" stroke-width="4.5" stroke-linejoin="round"/>`},
+  {id:'losango',   nome:'Losango',    draw:(id)=>`<polygon points="50,6 94,50 50,94 6,50" fill="url(#${id})" stroke="#000" stroke-width="5" stroke-linejoin="round"/>`},
+  {id:'cruz',      nome:'Cruz',       draw:(id)=>`<polygon points="36,8 64,8 64,36 92,36 92,64 64,64 64,92 36,92 36,64 8,64 8,36 36,36" fill="url(#${id})" stroke="#000" stroke-width="5" stroke-linejoin="round"/>`},
+  {id:'hexagono',  nome:'Hexágono',   draw:(id)=>`<polygon points="${polyPoints(50,50,38,6,6)}" fill="url(#${id})" stroke="#000" stroke-width="5" stroke-linejoin="round"/>`},
+  {id:'pentagono', nome:'Pentágono',  draw:(id)=>`<polygon points="${polyPoints(50,50,38,-90,5)}" fill="url(#${id})" stroke="#000" stroke-width="5" stroke-linejoin="round"/>`},
+];
+
+function polyPoints(cx,cy,r,startDeg,n){
+  let pts=[];
+  for(let i=0;i<n;i++){
+    const ang = (startDeg + i*360/n) * Math.PI/180;
+    pts.push(`${cx+r*Math.cos(ang)},${cy+r*Math.sin(ang)}`);
+  }
+  return pts.join(' ');
+}
+function starPoints(cx,cy,rOuter,rInner,n){
+  let pts=[];
+  for(let i=0;i<n*2;i++){
+    const r = i%2===0 ? rOuter : rInner;
+    const ang = (-90 + i*360/(n*2)) * Math.PI/180;
+    pts.push(`${cx+r*Math.cos(ang)},${cy+r*Math.sin(ang)}`);
+  }
+  return pts.join(' ');
+}
+
+const PATTERNS = ['solido','listrasDiag','pontos','xadrez','contorno'];
+
+function patternDefs(id, pattern, cor, usaCor){
+  if(usaCor){
+    return `<pattern id="${id}" width="1" height="1"><rect width="1" height="1" fill="${cor}"/></pattern>`;
+  }
+  switch(pattern){
+    case 'solido':
+      return `<pattern id="${id}" width="1" height="1"><rect width="1" height="1" fill="#000"/></pattern>`;
+    case 'contorno':
+      return `<pattern id="${id}" width="1" height="1"><rect width="1" height="1" fill="#fff"/></pattern>`;
+    case 'listrasDiag':
+      return `<pattern id="${id}" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <rect width="14" height="14" fill="#fff"/><rect width="7" height="14" fill="#000"/></pattern>`;
+    case 'pontos':
+      return `<pattern id="${id}" width="16" height="16" patternUnits="userSpaceOnUse">
+                <rect width="16" height="16" fill="#fff"/><circle cx="8" cy="8" r="4.4" fill="#000"/></pattern>`;
+    case 'xadrez':
+      return `<pattern id="${id}" width="18" height="18" patternUnits="userSpaceOnUse">
+                <rect width="18" height="18" fill="#fff"/>
+                <rect width="9" height="9" fill="#000"/><rect x="9" y="9" width="9" height="9" fill="#000"/></pattern>`;
+  }
+}
+
+function svgGlyph(shapeIdx, patternIdx, cor, usaCor, size){
+  const shape = SHAPES[shapeIdx % SHAPES.length];
+  const pattern = PATTERNS[patternIdx % PATTERNS.length];
+  const uid = 'p' + shapeIdx + '_' + patternIdx + '_' + Math.random().toString(36).slice(2,7);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100">
+    <defs>${patternDefs(uid, pattern, cor, usaCor)}</defs>
+    ${shape.draw(uid)}
+  </svg>`;
+}
+
+/* ---------------- icones de turno (pretos, sem depender de cor) ---------------- */
+function svgTurno(turno, cor, usaCor){
+  const c = usaCor ? cor : '#000';
+  if(turno === 'noite'){
+    return `<svg width="30" height="30" viewBox="0 0 30 30">
+      <path d="M20 4 A11 11 0 1 0 20 26 A9 9 0 1 1 20 4 Z" fill="${c}"/>
+    </svg>`;
+  }
+  const raios = turno === 'tarde' ? 9 : 7;
+  let linhas = '';
+  for(let i=0;i<8;i++){
+    const ang = i * Math.PI/4;
+    const x1 = 15 + raios*Math.cos(ang), y1 = 15 + raios*Math.sin(ang);
+    const x2 = 15 + (raios+4)*Math.cos(ang), y2 = 15 + (raios+4)*Math.sin(ang);
+    linhas += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/>`;
+  }
+  return `<svg width="30" height="30" viewBox="0 0 30 30">${linhas}<circle cx="15" cy="15" r="${raios}" fill="${c}"/></svg>`;
+}
+
+const TURNO_META = {
+  manha: {titulo:'DE MANHÃ'},
+  tarde: {titulo:'À TARDE'},
+  noite: {titulo:'À NOITE'}
+};
+
+/* ---------------- estado ---------------- */
+let medicamentos = [];
+
+const formaSelect = document.getElementById('medForma');
+SHAPES.forEach((s,i) => {
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = s.nome;
+  formaSelect.appendChild(opt);
+});
+
+function render(){
+  const usaCor = document.getElementById('modoCor').checked;
+
+  const list = document.getElementById('medList');
+  list.innerHTML = '';
+  medicamentos.forEach((m, idx) => {
+    const turnosTxt = m.turnos.map(t => TURNO_META[t].titulo.replace('À ','').replace('DE ','')).join(' + ');
+    const chip = document.createElement('div');
+    chip.className = 'med-chip';
+    chip.innerHTML = `
+      <span class="ico">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 20)}</span>
+      <span class="info"><b>${m.nome}</b><span>${SHAPES[m.shapeIdx%SHAPES.length].nome} · ${turnosTxt} · ${m.qtd}x</span></span>
+      <button data-idx="${idx}">✕</button>
+    `;
+    chip.querySelector('button').onclick = () => { medicamentos.splice(idx,1); render(); };
+    list.appendChild(chip);
+  });
+
+  const out = document.getElementById('turnosOut');
+  out.innerHTML = '';
+  ['manha','tarde','noite'].forEach(turno => {
+    const itens = medicamentos.filter(m => m.turnos.includes(turno));
+    if(itens.length === 0) return;
+    const meta = TURNO_META[turno];
+    const total = itens.reduce((s,m)=>s+Number(m.qtd),0);
+
+    const box = document.createElement('div');
+    box.className = 'turno-box';
+    box.innerHTML = `
+      <div class="turno-band">
+        <div class="left">${svgTurno(turno, '#000', usaCor)}<span class="titulo">${meta.titulo}</span></div>
+        <span class="total">${total} comprimido${total>1?'s':''}</span>
+      </div>
+      <div class="turno-grid">
+        ${itens.map(m => `
+          <div class="med-card">
+            <div class="glyph-wrap">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>
+            <div class="marcar-caixa">desenhe este símbolo<br>na caixa do remédio</div>
+            <div class="contagem">${Array(Number(m.qtd)).fill('<span class="pip"></span>').join('')}</div>
+            <div class="med-name">${m.nome}</div>
+            ${m.dose ? `<div class="med-dose">${m.dose}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    out.appendChild(box);
+  });
+
+  if(medicamentos.length === 0){
+    out.innerHTML = '<div class="empty-msg">Adicione medicamentos no painel à esquerda para montar o cartão.</div>';
+  }
+}
+
+document.getElementById('addBtn').onclick = () => {
+  const nome = document.getElementById('medNome').value.trim();
+  if(!nome){ document.getElementById('medNome').focus(); return; }
+  const qtd = document.getElementById('medQtd').value || 1;
+  const dose = document.getElementById('medDose').value.trim();
+  const cor = document.getElementById('medCor').value;
+  const turnos = [];
+  if(document.getElementById('tManha').checked) turnos.push('manha');
+  if(document.getElementById('tTarde').checked) turnos.push('tarde');
+  if(document.getElementById('tNoite').checked) turnos.push('noite');
+  if(turnos.length === 0){ alert('Marque ao menos um turno.'); return; }
+
+  const formaVal = document.getElementById('medForma').value;
+  let shapeIdx, patternIdx;
+  if(formaVal === 'auto'){
+    const n = medicamentos.length;
+    shapeIdx = n % SHAPES.length;
+    patternIdx = Math.floor(n / SHAPES.length) % PATTERNS.length;
+  } else {
+    shapeIdx = Number(formaVal);
+    const usosIguais = medicamentos.filter(m => m.shapeIdx === shapeIdx).length;
+    patternIdx = usosIguais % PATTERNS.length;
+  }
+
+  medicamentos.push({nome, cor, qtd, dose, turnos, shapeIdx, patternIdx});
+  document.getElementById('medNome').value = '';
+  document.getElementById('medDose').value = '';
+  document.getElementById('medQtd').value = 1;
+  document.getElementById('medForma').value = 'auto';
+  render();
+  document.getElementById('medNome').focus();
+};
+
+document.getElementById('modoCor').addEventListener('change', render);
+document.getElementById('pacienteInput').addEventListener('input', e => {
+  document.getElementById('pacienteOut').textContent = e.target.value.toUpperCase() || 'NOME DO PACIENTE';
+});
+document.getElementById('rodapeInput').addEventListener('input', e => {
+  document.getElementById('rodapeOut').textContent = e.target.value;
+});
+document.getElementById('printBtn').onclick = () => window.print();
+
+/* ---------------- importar receita (foto/PDF -> texto -> candidatos) ---------------- */
+
+// linha com nome + dose reconhecível ("Losartana 50mg", "Amoxicilina 500 mg") marca o
+// INÍCIO de um novo medicamento; linhas seguintes (posologia) são anexadas até a próxima
+const RX_CABECALHO_MED = /^(.{2,50}?)\s+(\d+(?:[.,]\d+)?)\s*(mg|mcg|ug|g|ml|ui)\b/i;
+
+function extrairBlocosMedicamento(texto){
+  const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  const blocos = [];
+  let atual = null;
+  linhas.forEach(linha => {
+    const m = linha.match(RX_CABECALHO_MED);
+    if(m){
+      if(atual) blocos.push(atual);
+      atual = { nome: `${m[1]} ${m[2]}${m[3]}`.replace(/\s+/g,' ').trim(), texto: linha };
+    } else if(atual){
+      atual.texto += ' ' + linha;
+    }
+  });
+  if(atual) blocos.push(atual);
+  return blocos;
+}
+
+function detectarQtdPorTomada(texto){
+  const m = texto.match(/(\d+)\s*(comprimidos?|c[áa]psulas?|cp\b|dragea|drágea|gts|gotas|ml)/i);
+  return m ? Math.max(1, Number(m[1])) : 1;
+}
+
+// devolve {turnos:[...], alertaExtra:bool} — nunca devolve turnos vazio (fallback seguro:
+// manhã, pra sempre haver algo visível pro médico corrigir, nunca um remédio "sumido")
+function detectarTurnos(texto){
+  const t = texto.toLowerCase();
+  const turnos = new Set();
+  let nx = null;
+
+  let m = t.match(/(?:de\s*)?(\d{1,2})\s*(?:\/|em)\s*\1\s*h(?:oras)?/);
+  if(m) nx = Math.max(1, Math.round(24 / Number(m[1])));
+
+  m = t.match(/(\d)\s*[x×]\s*(?:ao dia|dia|\/dia)/);
+  if(m) nx = Number(m[1]);
+
+  if(/\b(1\s*vez\s*ao dia|uma vez ao dia|dose única)\b/.test(t)) nx = nx || 1;
+
+  if(/manh[ãa]|jejum/.test(t)) turnos.add('manha');
+  if(/tarde|almo[çc]o/.test(t)) turnos.add('tarde');
+  if(/noite|deitar|dormir|ceia/.test(t)) turnos.add('noite');
+
+  let alertaExtra = false;
+  if(turnos.size === 0 && nx){
+    if(nx <= 1) turnos.add('manha');
+    else if(nx === 2){ turnos.add('manha'); turnos.add('noite'); }
+    else { turnos.add('manha'); turnos.add('tarde'); turnos.add('noite'); if(nx > 3) alertaExtra = true; }
+  }
+  if(turnos.size === 0) turnos.add('manha');
+  return { turnos: Array.from(turnos), alertaExtra };
+}
+
+function parseReceita(texto){
+  return extrairBlocosMedicamento(texto).map(b => {
+    const { turnos, alertaExtra } = detectarTurnos(b.texto);
+    return { nomeRaw: b.nome, qtd: detectarQtdPorTomada(b.texto), turnos, alertaExtra, freqTexto: b.texto };
+  });
+}
+
+function adicionarMedicamentoDaLista(nome, qtd, turnos){
+  const n = medicamentos.length;
+  const shapeIdx = n % SHAPES.length;
+  const patternIdx = Math.floor(n / SHAPES.length) % PATTERNS.length;
+  medicamentos.push({ nome, cor:'#0f766e', qtd, dose:'', turnos, shapeIdx, patternIdx });
+  render();
+}
+
+function renderCandidatos(candidatos){
+  const box = document.getElementById('candidatosList');
+  box.innerHTML = '';
+  if(candidatos.length === 0){
+    box.innerHTML = '<div class="cand-fonte">Nenhum medicamento identificado automaticamente — confira o texto lido acima e adicione manualmente no formulário abaixo.</div>';
+    return;
+  }
+  candidatos.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'candidato-chip';
+    div.innerHTML = `
+      <div class="cand-linha">
+        <input type="text" class="cand-nome" value="${c.nomeRaw.replace(/"/g,'&quot;')}">
+        <input type="number" class="cand-qtd" value="${c.qtd}" min="1" max="9">
+      </div>
+      <div class="cand-linha" style="margin-top:6px;">
+        <span class="cand-turnos">
+          <label><input type="checkbox" class="cand-t" data-t="manha" ${c.turnos.includes('manha') ? 'checked' : ''}> Manhã</label>
+          <label><input type="checkbox" class="cand-t" data-t="tarde" ${c.turnos.includes('tarde') ? 'checked' : ''}> Tarde</label>
+          <label><input type="checkbox" class="cand-t" data-t="noite" ${c.turnos.includes('noite') ? 'checked' : ''}> Noite</label>
+        </span>
+      </div>
+      ${c.alertaExtra ? '<div class="cand-alerta">⚠ parece ter mais de 3 tomadas/dia — confira o horário extra manualmente</div>' : ''}
+      <div class="cand-fonte">lido: "${c.freqTexto.slice(0,100)}${c.freqTexto.length > 100 ? '…' : ''}"</div>
+      <button type="button" class="cand-add">+ adicionar ao cartão</button>
+    `;
+    div.querySelector('.cand-add').onclick = () => {
+      const nome = div.querySelector('.cand-nome').value.trim();
+      if(!nome) return;
+      const qtd = Number(div.querySelector('.cand-qtd').value) || 1;
+      const turnos = Array.from(div.querySelectorAll('.cand-t')).filter(cb => cb.checked).map(cb => cb.dataset.t);
+      if(turnos.length === 0){ alert('Marque ao menos um turno.'); return; }
+      adicionarMedicamentoDaLista(nome, qtd, turnos);
+      div.style.opacity = '.5';
+      const btn = div.querySelector('.cand-add');
+      btn.textContent = '✓ adicionado';
+      btn.disabled = true;
+    };
+    box.appendChild(div);
+  });
+}
+
+async function extrairTextoArquivo(file, statusEl){
+  if(file.type === 'application/pdf'){
+    statusEl.textContent = 'Lendo PDF...';
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let texto = '';
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      texto += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    if(texto.trim().length < 15){
+      // sem camada de texto (PDF escaneado) -> OCR página a página
+      texto = '';
+      for(let i = 1; i <= pdf.numPages; i++){
+        statusEl.textContent = `PDF escaneado — aplicando OCR na página ${i}/${pdf.numPages}...`;
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        const { data: { text } } = await Tesseract.recognize(canvas, 'por');
+        texto += text + '\n';
+      }
+    }
+    return texto;
+  }
+  const { data: { text } } = await Tesseract.recognize(file, 'por', {
+    logger: m => { if(m.status === 'recognizing text') statusEl.textContent = `Lendo imagem... ${Math.round(m.progress * 100)}%`; }
+  });
+  return text;
+}
+
+document.getElementById('receitaBtn').onclick = async () => {
+  const file = document.getElementById('receitaInput').files[0];
+  const status = document.getElementById('receitaStatus');
+  const btn = document.getElementById('receitaBtn');
+  if(!file){ status.textContent = 'Escolha um arquivo primeiro.'; return; }
+  btn.disabled = true;
+  status.textContent = 'Processando...';
+  try{
+    const texto = await extrairTextoArquivo(file, status);
+    document.getElementById('receitaTexto').value = texto;
+    document.getElementById('receitaTextoBox').style.display = 'block';
+    const candidatos = parseReceita(texto);
+    renderCandidatos(candidatos);
+    status.textContent = candidatos.length
+      ? `${candidatos.length} medicamento(s) identificado(s) — confira antes de adicionar.`
+      : 'Não identifiquei medicamentos automaticamente. Confira o texto lido e adicione manualmente.';
+  } catch(e){
+    status.textContent = 'Erro ao ler o arquivo: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+document.getElementById('reprocessarBtn').onclick = () => {
+  renderCandidatos(parseReceita(document.getElementById('receitaTexto').value));
+};
+
+render();
+</script>
+</body>
+</html>
