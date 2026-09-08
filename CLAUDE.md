@@ -10,6 +10,12 @@ cor é só reforço opcional.
 `cartao_remedios_editavel.html` — single-file HTML/CSS/JS, sem build, sem
 dependência externa. Roda abrindo direto no navegador.
 
+**`index.html` é cópia idêntica** de `cartao_remedios_editavel.html`, existe
+só pra permitir acesso pela raiz do GitHub Pages
+(`alyssonfigueiredo.github.io/cartao-remedios/`) sem precisar digitar o
+nome do arquivo na URL. **Toda edição feita em um precisa ser replicada no
+outro antes de commitar** — não há build/symlink automatizando isso.
+
 ## Como funciona
 - Painel de edição à esquerda (`#controls`, classe `.no-print`): nome do
   paciente, form pra adicionar medicamento (nome+dose, símbolo, quantidade
