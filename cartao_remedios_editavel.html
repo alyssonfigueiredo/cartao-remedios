@@ -211,6 +211,11 @@
     body{background:#fff; padding:0; display:block;}
     #controls, #printBtn, .no-print{display:none !important;}
     #sheet{box-shadow:none; width:auto; min-height:0; padding:10mm; margin:0;}
+    /* Sem isso o navegador OMITE cor de fundo na impressão por padrão (economia de
+       tinta) — a faixa escura da noite vira branca e a lua branca some em cima do
+       branco. Força o fundo a sair mesmo sem o usuário marcar "imprimir gráficos de
+       fundo" nas opções da impressora. */
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
   }
 </style>
 </head>

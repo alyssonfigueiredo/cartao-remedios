@@ -41,6 +41,18 @@ outro antes de commitar** — não há build/symlink automatizando isso.
   maiores (`.med-card` 48mm, `.glyph-wrap` 34mm) de propósito — pedido
   explícito do usuário pra preencher mais a folha A4 e ficar mais didático/
   visível (público-alvo inclui baixa visão, não só analfabetismo).
+- **Bug real corrigido (2026-09-09): a lua não aparecia na impressão P&B.**
+  Navegador OMITE `background-color` na impressão por padrão (economia de
+  tinta) a menos que o usuário marque manualmente "imprimir gráficos de
+  fundo" nas opções da impressora — a faixa escura da noite virava branca e
+  a lua branca sumia em cima do branco. Corrigido forçando
+  `print-color-adjust:exact` (+ prefixo `-webkit-`) em `*` dentro de
+  `@media print` — o fundo escuro passa a sair sempre, sem depender de
+  configuração nenhuma do usuário. Suportado em Chrome/Edge/Firefox/Safari
+  atuais; qualquer elemento novo que dependa de `background` pra comunicar
+  algo (não só cor de reforço opcional) tem que continuar coberto por essa
+  regra — não reintroduzir cor-de-fundo-como-informação sem conferir a
+  impressão de verdade, não só a tela.
 - Instrução impressa em cada card: "desenhe este símbolo na caixa do
   remédio" — caregiver reproduz o símbolo com caneta na caixa real, paciente
   bate símbolo com símbolo.
