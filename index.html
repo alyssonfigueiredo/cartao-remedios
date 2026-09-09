@@ -409,15 +409,24 @@ function starPoints(cx,cy,rOuter,rInner,n){
 // preenchimento é só reforço quando os símbolos se repetem no 2º ciclo+).
 const PATTERNS = ['contorno','listrasDiag','pontos','xadrez','solido'];
 
+// `patternContentUnits="objectBoundingBox"` é obrigatório nos 3 padrões
+// abaixo (largura/altura "1") — sem ele, o `<rect width="1" height="1">"
+// é lido em userSpaceOnUse (1px real, não 100% do tile) e o preenchimento
+// vira um pontinho invisível no canto: bug real achado 2026-09-09 (o modo
+// colorido e o padrão "sólido" saíam como contorno vazio, indistinguíveis
+// de qualquer outro símbolo do mesmo shape — o app inteiro depende desse
+// preenchimento pra diferenciar remédios repetidos). `listrasDiag`/
+// `pontos`/`xadrez` já usam `patternUnits="userSpaceOnUse"` com pixels
+// reais e nunca tiveram esse problema.
 function patternDefs(id, pattern, cor, usaCor){
   if(usaCor){
-    return `<pattern id="${id}" width="1" height="1"><rect width="1" height="1" fill="${cor}"/></pattern>`;
+    return `<pattern id="${id}" width="1" height="1" patternContentUnits="objectBoundingBox"><rect width="1" height="1" fill="${cor}"/></pattern>`;
   }
   switch(pattern){
     case 'solido':
-      return `<pattern id="${id}" width="1" height="1"><rect width="1" height="1" fill="#000"/></pattern>`;
+      return `<pattern id="${id}" width="1" height="1" patternContentUnits="objectBoundingBox"><rect width="1" height="1" fill="#000"/></pattern>`;
     case 'contorno':
-      return `<pattern id="${id}" width="1" height="1"><rect width="1" height="1" fill="#fff"/></pattern>`;
+      return `<pattern id="${id}" width="1" height="1" patternContentUnits="objectBoundingBox"><rect width="1" height="1" fill="#fff"/></pattern>`;
     case 'listrasDiag':
       return `<pattern id="${id}" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
                 <rect width="14" height="14" fill="#fff"/><rect width="7" height="14" fill="#000"/></pattern>`;

@@ -332,6 +332,30 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Bug real corrigido: preenchimento sólido/colorido não aparecia (2026-09-09)
+Achado por acaso construindo um mock pra comparar layout (não fazia parte
+do pedido original). `patternDefs()` (função de símbolo, `svgGlyph`)
+define os padrões "sólido", "contorno" e o modo colorido (`usaCor`) com
+`<pattern width="1" height="1"><rect width="1" height="1" .../></pattern>`
+sem `patternContentUnits`. O padrão SVG desse atributo é
+`userSpaceUse` — então o `rect width="1" height="1"` é 1 pixel real, não
+100% do tile (que É 100% da forma, via `patternUnits` default
+`objectBoundingBox`) — o preenchimento vira um pontinho de 1px escondido
+no canto, e a forma renderiza como se fosse contorno vazio. `contorno`
+(fill branco) mascarava o próprio bug — o resultado visual "errado" é
+idêntico ao "certo" pra um fundo branco — então nunca foi notado. Mas
+**"sólido" (2º ciclo do mesmo formato) e o modo colorido inteiro estavam
+quebrados em produção**: qualquer receita com 9+ remédios do mesmo
+formato, ou com "impressora colorida" marcado, saía com símbolos
+indistinguíveis entre si — o oposto do que a ferramenta existe pra
+garantir. Confirmado reproduzindo o bug isolado (SVG puro) e depois
+chamando `svgGlyph(...)` direto no app real via Playwright antes do fix
+(círculo "sólido" e círculo colorido saíam ambos como contorno vazio) e
+depois (preenchimento preto sólido e teal aparecem certos). Fix: acrescentar
+`patternContentUnits="objectBoundingBox"` nos 3 `<pattern>` afetados —
+`listrasDiag`/`pontos`/`xadrez` já usam `patternUnits="userSpaceOnUse"`
+com pixels reais de propósito e não tinham esse problema.
+
 ## Domínio próprio: receitafacil.soaperando.com.br (2026-09-09, pendente do lado DNS)
 Usuário pediu esse domínio (subdomínio do soaperando.com.br, que já é do
 consultório). Feito o que dava pra fazer daqui: arquivo `CNAME` na raiz
