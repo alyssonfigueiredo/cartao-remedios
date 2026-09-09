@@ -364,6 +364,69 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Bug real corrigido: "ajustar para 1 página" tinha pontos cegos de recálculo (2026-09-09)
+Usuário reportou PDF real quebrando em 2 páginas com uma receita de 4
+remédios de manhã + 2 à noite — geometricamente cabia numa página (2 boxes
+de turno bem abaixo de 297mm de altura somados), mas saiu partido mesmo
+assim. Investigando `ajustarParaCaberEmUmaPagina()`, achei que ela só era
+chamada em 2 lugares: depois de `render()` (toda vez que a lista de
+remédios muda) e no `change` do checkbox "ajustar para 1 página". **Ela
+NUNCA era recalculada:**
+- Ao editar `#pacienteInput`/`#rodapeInput` (só atualizavam o texto de
+  saída, sem re-medir a altura).
+- Ao editar direto os campos `contenteditable` da folha (nome do
+  paciente, título "Receituário Acessível", texto de instrução, rodapé) —
+  zero listener neles antes deste fix.
+- **Antes de imprimir de verdade** — não havia rede de segurança
+  recalculando no clique do botão, então qualquer mudança de layout entre
+  a última medição e o clique em "Imprimir" (inclusive a fonte Google
+  Fonts, que carrega via `@import` assíncrono e pode ainda não ter
+  terminado no momento em que `render()` mediu a altura pela 1ª vez —
+  clássica causa de "cabe na tela, estoura no PDF": a métrica do texto
+  muda depois que a fonte troca do fallback do sistema pra Plus Jakarta
+  Sans, e ninguém remedia depois disso) passava direto pro PDF sem chance
+  de correção.
+**Fix:** (1) `document.querySelectorAll('#sheet [contenteditable]')` +
+listener `input` chamando `ajustarParaCaberEmUmaPagina` em cada um; (2)
+mesma chamada adicionada dentro dos listeners de `pacienteInput`/
+`rodapeInput`; (3) `document.fonts.ready.then(ajustarParaCaberEmUmaPagina)`
+— recalcula assim que a fonte customizada termina de carregar, não importa
+quando isso aconteça; (4) `printBtn.onclick` agora chama
+`ajustarParaCaberEmUmaPagina()` antes de `window.print()` — rede de
+segurança final. **Não consegui reproduzir a corrida exata de fonte
+assíncrona neste ambiente** (o proxy da sessão bloqueia
+`fonts.googleapis.com`/`fonts.gstatic.com`, então aqui a Plus Jakarta Sans
+nunca carrega e todo teste roda 100% no fallback do sistema, sem swap de
+fonte pra reproduzir a corrida) — mas validei com Playwright que os 4
+pontos de recálculo novos DE FATO mudam o zoom aplicado quando disparados
+(editar o `h2` contenteditable moveu o zoom de 0.999 pra 0.845 numa
+receita de teste), então os gaps reais que existiam (edição sem
+recálculo) estão fechados mesmo sem confirmar 100% que a corrida de fonte
+era a causa exata deste caso específico.
+
+## Nome do paciente extraído automaticamente da receita importada (2026-09-09)
+Pedido do usuário: a receita de origem (e-SUS/PEC) já traz o nome do
+paciente no texto — o app só usava o texto pra achar MEDICAMENTOS, o nome
+ficava sempre em branco ("NOME DO PACIENTE") esperando o médico digitar de
+novo algo que já estava no papel. `extrairNomePaciente(texto)`
+(`cartao_remedios_editavel.html`) varre linha por linha com 2 níveis de
+padrão: **fortes** primeiro (`Nome do paciente:`, `Paciente:`), só caindo
+pro **fraco** (`Nome:`) se nenhum forte bater — e o fraco exige `:` colado
+em "Nome" (sem espaço no meio) bem de propósito, senão "Nome do
+medicamento: Losartana" seria lido como nome de paciente. `limpar()` corta
+lixo colado na mesma linha (CPF, data de nascimento, número de cartão
+SUS/CNS) que o e-SUS costuma grudar depois do nome sem quebra de linha.
+Chamado em `lerReceitaSelecionada()` logo depois do parse de medicamentos,
+**só preenche se `#pacienteInput` ainda estiver vazio** — nunca sobrescreve
+nome que o médico já digitou ou corrigiu manualmente (mesmo comportamento
+de "nunca sobrescrever o usuário" já usado em `_herdarContextoCalc` do
+soaperando, adaptado aqui). Status da leitura ganha uma frase extra
+("Nome do paciente identificado automaticamente — confira.") só quando
+acha algo, pra não afirmar confiança que não existe quando o padrão não
+bate. Testado com 5 casos via Node (nome + lixo na mesma linha, "Nome:"
+fraco coexistindo com "Nome do medicamento:" sem colidir, receita sem
+nome nenhum) — todos corretos.
+
 ## Layout mesclado a partir de mock gerado por IA (2026-09-09)
 Usuário mandou uma imagem gerada por IA como referência de layout e pediu
 pra avaliar o que valia aproveitar. Processo: montei um mock estático

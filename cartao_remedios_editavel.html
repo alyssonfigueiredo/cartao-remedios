@@ -669,11 +669,35 @@ document.getElementById('modoCor').addEventListener('change', render);
 document.getElementById('fit1Pagina').addEventListener('change', ajustarParaCaberEmUmaPagina);
 document.getElementById('pacienteInput').addEventListener('input', e => {
   document.getElementById('pacienteOut').textContent = e.target.value.toUpperCase() || 'NOME DO PACIENTE';
+  ajustarParaCaberEmUmaPagina();
 });
 document.getElementById('rodapeInput').addEventListener('input', e => {
   document.getElementById('rodapeOut').textContent = e.target.value;
+  ajustarParaCaberEmUmaPagina();
 });
-document.getElementById('printBtn').onclick = () => window.print();
+// Editar direto na folha (nome do paciente, título, observação, rodapé são
+// contenteditable) nunca recalculava o zoom de "caber em 1 página" — um
+// nome de paciente comprido digitado ali podia empurrar a receita pra 2ª
+// folha sem o app perceber (bug real 2026-09-09, achado investigando PDF
+// quebrando em 2 páginas do usuário).
+document.querySelectorAll('#sheet [contenteditable]').forEach(el => {
+  el.addEventListener('input', ajustarParaCaberEmUmaPagina);
+});
+// Google Fonts carrega de forma assíncrona (@import) — se a medição de
+// altura rodar ANTES da fonte customizada terminar de carregar, o texto
+// pode reflow (quebrar linha diferente) depois que a fonte troca, e o
+// zoom calculado fica errado sem ninguém recalcular (mesma classe de bug
+// acima: medição e impressão em momentos com métricas de texto diferentes).
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(ajustarParaCaberEmUmaPagina);
+}
+document.getElementById('printBtn').onclick = () => {
+  // Recalcula na hora de imprimir — rede de segurança final contra
+  // qualquer mudança de layout (fonte, edição) que tenha escapado dos
+  // pontos de recálculo acima.
+  ajustarParaCaberEmUmaPagina();
+  window.print();
+};
 
 /* ---------------- importar receita (foto/PDF -> texto -> candidatos) ---------------- */
 
@@ -766,6 +790,29 @@ function parseReceita(texto){
     return { nomeRaw: b.nome, qtd: detectarQtdPorTomada(b.texto), turnos, alertaExtra, freqTexto: b.texto };
   });
   return dedupCandidatos(brutos);
+}
+
+// Nome do paciente já vem na receita de origem (e-SUS/PEC sempre rotula
+// "Paciente:"/"Nome do paciente:") — extrai em vez de deixar o médico
+// digitar de novo o que já estava no papel (pedido 2026-09-09). Padrões
+// FORTES (rótulo específico) checados antes do fraco ("Nome:" sozinho,
+// que colidiria com "Nome do medicamento:" se não exigisse ":" colado).
+function extrairNomePaciente(texto){
+  const linhas = texto.split(/\r?\n/);
+  const limpar = s => s.split(/\s{2,}|CPF|Data de Nasc|Nasc\.|CNS\b|Cart[ãa]o Nacional|Cart[ãa]o SUS|Cart[ãa]o do SUS/i)[0].trim();
+  const padroesFortes = [/^\s*nome\s+do\s+paciente\s*:\s*(.+)$/i, /^\s*paciente\s*:\s*(.+)$/i];
+  for(const linha of linhas){
+    for(const rx of padroesFortes){
+      const m = linha.match(rx);
+      if(m){ const nome = limpar(m[1]); if(nome.length >= 3 && nome.length <= 60) return nome; }
+    }
+  }
+  const padraoFraco = /^\s*nome\s*:\s*(.+)$/i; // ":" obrigatório colado em "nome" — sem isso casa "Nome do medicamento: ..."
+  for(const linha of linhas){
+    const m = linha.match(padraoFraco);
+    if(m){ const nome = limpar(m[1]); if(nome.length >= 3 && nome.length <= 60) return nome; }
+  }
+  return null;
 }
 
 // Receita já é a prescrição do próprio médico — entra direto no cartão, sem
@@ -925,10 +972,26 @@ async function lerReceitaSelecionada(){
     document.getElementById('receitaTextoBox').style.display = 'block';
     const candidatos = parseReceita(textoTotal);
     autoImportarReceita(candidatos);
+
+    // Só preenche se o médico ainda não digitou nada — nunca sobrescrever
+    // nome já em edição (ex.: reprocessando o texto depois de corrigir algo).
+    const pacienteInput = document.getElementById('pacienteInput');
+    let nomeAchado = false;
+    if(!pacienteInput.value.trim()){
+      const nome = extrairNomePaciente(textoTotal);
+      if(nome){
+        pacienteInput.value = nome;
+        document.getElementById('pacienteOut').textContent = nome.toUpperCase();
+        ajustarParaCaberEmUmaPagina();
+        nomeAchado = true;
+      }
+    }
+
     const fonte = files.length > 1 ? ` (${files.length} arquivos)` : '';
+    const partePaciente = nomeAchado ? ' Nome do paciente identificado automaticamente — confira.' : '';
     status.textContent = candidatos.length
-      ? `${candidatos.length} medicamento(s) adicionado(s) automaticamente à receita${fonte} — confira a lista abaixo (e o texto lido acima) antes de imprimir.`
-      : 'Não identifiquei medicamentos automaticamente. Confira o texto lido e adicione manualmente.';
+      ? `${candidatos.length} medicamento(s) adicionado(s) automaticamente à receita${fonte} — confira a lista abaixo (e o texto lido acima) antes de imprimir.${partePaciente}`
+      : `Não identifiquei medicamentos automaticamente. Confira o texto lido e adicione manualmente.${partePaciente}`;
   } catch(e){
     status.textContent = 'Erro ao ler o arquivo: ' + e.message;
   } finally {
