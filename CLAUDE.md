@@ -30,6 +30,17 @@ outro antes de commitar** — não há build/symlink automatizando isso.
   contorno) pra continuar distinguindo em P&B.
 - Checkbox "unidade tem impressora colorida" liga cor como reforço extra
   (o símbolo continua sendo o código principal mesmo com cor ligada).
+- **Faixa de turno sinaliza dia/noite por contraste, não por cor (2026-09-09).**
+  `.turno-band.turno-noite` é sempre fundo escuro (`var(--ink)`) com lua
+  branca (`svgTurno`) + 3 estrelinhas; `.turno-manha`/`.turno-tarde` são
+  sempre fundo claro com sol de 12 raios grossos preto. Isso é layout/
+  wayfinding da FOLHA, não identificação de medicamento — não é a mesma
+  regra de "símbolo não depende de cor" (essa vale só pro código do
+  remédio); o contraste claro/escuro funciona sozinho em P&B, sem precisar
+  do toggle `modoCor`. Ícones grandes (`.turno-icon-wrap`, 19mm) e cards
+  maiores (`.med-card` 48mm, `.glyph-wrap` 34mm) de propósito — pedido
+  explícito do usuário pra preencher mais a folha A4 e ficar mais didático/
+  visível (público-alvo inclui baixa visão, não só analfabetismo).
 - Instrução impressa em cada card: "desenhe este símbolo na caixa do
   remédio" — caregiver reproduz o símbolo com caneta na caixa real, paciente
   bate símbolo com símbolo.
