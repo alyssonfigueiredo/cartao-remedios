@@ -233,27 +233,32 @@ com o arquivo PDF/foto de verdade num navegador real, nunca só com texto
 reconstruído à mão — a extração de PDF real tem estrutura (colunas, vias,
 posição) que reconstrução manual não reproduz.
 
-**"Cor da caixa": de quadrinho tracejado pra frase simples (2026-09-09,
-2ª rodada).** Nasceu como dashed box em branco ao lado do símbolo, onde o
-cuidador pintaria/escreveria a cor real da caixa do remédio à mão. Testado
-com mock lado a lado de 3 variantes (caixa tracejada atual, só a frase
-cinza sem caixa, frase + linha pra escrever) mais uma 4ª cogitada no meio
-do processo (mesma caixa sem o tracejado, borda sólida) — essa última
-descartada sem nem virar opção formal: borda sólida sem conteúdo lia como
-elemento incompleto/quebrado, pior que o tracejado (que pelo menos é o
-código visual universal de "isso é rascunho, preencha"). Vencedora: **só
-a frase cinza `cor da caixa`, sem caixa nenhuma** (`.cor-caixa-label`,
-abaixo do `.glyph-wrap`, dentro do `.med-card`) — o quadrado ocupava
-espaço competindo com o símbolo bem na configuração horizontal de cartão
-que o layout mesclado (seção abaixo) introduziu no mesmo dia. Não inverte
-a prioridade símbolo-primeiro/cor-bônus da seção "Restrições de design"
-acima: funciona igual sem impressora colorida, é só um lembrete de onde
-anotar a cor à mão; o símbolo continua sendo o código que o app garante
-ser único por medicamento. A frase de instrução no topo da folha (`.obs`)
-que dizia "No quadrinho tracejado, marque a cor da caixa" foi atualizada
-pra "Onde disser 'cor da caixa', anote a cor real da caixa" — texto
-desatualizado apontando pra um elemento que não existe mais confundiria
-mais que ajudaria.
+**"Cor da caixa": 3 rodadas no mesmo dia até virar mancha esfumaçada
+(2026-09-09).** Linha do tempo: (1) quadrado tracejado ao lado do símbolo,
+onde o cuidador pintaria/escreveria a cor real da caixa à mão; (2) testado
+lado a lado com "só a frase cinza, sem caixa" e "frase + linha pra
+escrever" — venceu a frase sem caixa nenhuma (`.cor-caixa-label`), porque
+o quadrado competia por espaço com o símbolo no cartão horizontal; (3)
+usuário reconsiderou: queria o quadrado de volta, mas com receio real de
+que uma forma de CONTORNO NÍTIDO (quadrado ou círculo) ao lado dos símbolos
+geométricos do remédio (que são todos formas de contorno nítido) pudesse
+ser lida pelo paciente como mais um símbolo pra decorar, confundindo com o
+código real do medicamento. Uma variante intermediária (mesmo quadrado sem
+o tracejado, borda sólida) tinha sido cogitada e descartada na rodada 2 —
+borda sólida sem conteúdo lia como elemento incompleto/quebrado, pior que
+o tracejado. Solução final: **mancha "esfumaçada"** — `.cor-caixa-box`
+virou um `::before` com gradiente radial cinza + `blur(2px)`, SEM borda
+nem contorno definido, propositalmente diferente de qualquer forma de
+`SHAPES` (nenhuma tem borda difusa) — o texto "cor da caixa" fica por cima
+num `<span>` separado do `::before` pra não borrar junto. Volta a ficar
+DENTRO do `.top-row`, ao lado do `.glyph-wrap` (estrutura de HTML da
+rodada 1, só a aparência do quadrado mudou). Não inverte a prioridade
+símbolo-primeiro/cor-bônus da seção "Restrições de design" acima: funciona
+igual sem impressora colorida, é só um lembrete visual de onde anotar a
+cor à mão; o símbolo continua sendo o código que o app garante ser único
+por medicamento. Validado com screenshot ampliado (zoom) lado a lado do
+símbolo real, mostrando o contraste de forma (nítido vs. difuso) antes de
+fechar.
 
 **Limitações conhecidas / não resolvidas ainda:**
 - `detectarTurnos` cobre só 3 turnos (manhã/tarde/noite); frequência >3x/dia

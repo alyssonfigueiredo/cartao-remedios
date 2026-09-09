@@ -214,14 +214,27 @@
   .med-card:first-child{border-left:none;}
   .med-card .top-row{display:flex; align-items:center; justify-content:center; gap:4mm; margin-bottom:2.5mm;}
   .glyph-wrap{width:26mm; height:26mm; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
-  /* Testado como quadrado tracejado pro cuidador desenhar/escrever a cor
-     (2026-09-09) e como versão sem tracejado (borda sólida) — as duas
-     competiam por espaço com o símbolo e a sem-tracejado ainda por cima
-     parecia elemento incompleto/quebrado (borda sem preenchimento não
-     sinaliza "escreva aqui" do jeito que o tracejado sinaliza). Virou só
-     a frase cinza, direta, sem caixa nenhuma (avaliação do usuário,
-     validada com mock lado a lado das 3 opções). */
-  .cor-caixa-label{font-size:9px; color:#9aa5aa; margin:1.5mm 0 2mm;}
+  /* "cor da caixa": passou por quadrado tracejado -> só frase -> de volta
+     pro quadrado (2026-09-09, 3 rodadas). Medo real do usuário: um
+     quadrado/círculo com CONTORNO NÍTIDO ao lado dos símbolos geométricos
+     (que também são formas com contorno nítido: círculo, quadrado,
+     triângulo...) pode ser lido pelo paciente como MAIS um símbolo pra
+     decorar, confundindo com o código real do remédio. Solução: mancha
+     "esfumaçada" — gradiente radial cinza com blur, SEM borda nem contorno
+     definido, propositalmente diferente de qualquer forma geométrica do
+     app (nenhum símbolo de `SHAPES` tem borda difusa). ::before separado
+     do texto pra o blur não borrar a legenda "cor da caixa" junto. */
+  .cor-caixa-box{
+    position:relative; width:15mm; height:15mm; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:7px; color:#8a8f93; line-height:1.2;
+  }
+  .cor-caixa-box::before{
+    content:''; position:absolute; inset:-1.5mm; border-radius:50%;
+    background:radial-gradient(circle, rgba(100,110,115,.24) 0%, rgba(100,110,115,.11) 45%, rgba(100,110,115,0) 74%);
+    filter:blur(2px);
+  }
+  .cor-caixa-box span{position:relative;}
   .contagem{display:flex; justify-content:center; gap:1.6mm; margin-bottom:2.5mm; flex-wrap:wrap;}
   .contagem .pip{width:3.8mm; height:3.8mm; border-radius:50%; background:#000; display:inline-block;}
   .med-name{font-size:13px; font-weight:800; line-height:1.2; color:var(--ink); font-family:var(--font-sans); text-transform:uppercase;}
@@ -572,9 +585,9 @@ function render(){
         ${itens.map(m => `
           <div class="med-card">
             <div class="top-row">
+              <div class="cor-caixa-box"><span>cor da<br>caixa</span></div>
               <div class="glyph-wrap">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>
             </div>
-            <div class="cor-caixa-label">cor da caixa</div>
             <div class="contagem">${Array(Number(m.qtd)).fill('<span class="pip"></span>').join('')}</div>
             <div class="med-name">${m.nome}</div>
             ${m.dose ? `<div class="med-dose">${m.dose}</div>` : ''}
