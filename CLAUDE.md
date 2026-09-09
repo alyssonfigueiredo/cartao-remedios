@@ -142,12 +142,32 @@ itemização do e-SUS ("Comprimido 1. Atenolol 50mg" em vez de "Atenolol
 comprimidos", plural, avulsa) com a quantidade POR TOMADA ("1 comprimido,"
 singular, colada à frequência) — agora prioriza singular+vírgula antes de
 cair no fallback plural.
-Sem suíte de teste no projeto ainda; validação foi manual, reconstruindo o
-texto linha-a-linha esperado da receita real e rodando `parseReceita` num
-script Node descartável (`node -e "..."` fatiando o HTML pelos marcadores
-`const RX_CABECALHO_MED` / `function adicionarMedicamentoDaLista`) — receita
-com os 4 medicamentos bateu turno-a-turno e qtd-a-qtd contra o resultado
-esperado antes de aplicar o fix no arquivo real.
+Validação inicial foi manual (texto linha-a-linha reconstruído à mão + script
+Node descartável). Validação de verdade (2026-09-09, mesma sessão) veio
+depois, com Playwright real (Chromium) anexando o PDF de verdade no
+`#receitaInput` e clicando "Ler receita" de ponta a ponta — precisou baixar
+`pdf.min.js`/`pdf.worker.min.js`/`tesseract.min.js` pra uma pasta local
+porque o sandbox de teste bloqueia o Chromium headless de baixar CDN
+externo (não é um problema do app; navegador real do médico não tem essa
+restrição). Esse teste com o arquivo real achou um **2º bug real que o
+teste manual não pegava**: `RX_CABECALHO_MED — duplicata de 2 vias`.
+
+**Bug real corrigido (2026-09-09) — receita de 4 medicamentos virava 8 no cartão.**
+Receituário do e-SUS/PEC sai com **2 vias na mesma página/PDF** ("1ª via —
+retenção na farmácia" + "2ª via — orientação ao paciente"), lado a lado,
+cada uma com a lista de medicamentos INTEIRA repetida. `extrairTextoArquivo`
+lê a página inteira, então o texto extraído tinha os 4 medicamentos 2x cada
+— sem dedup, cada um virava 2 cards idênticos (símbolo diferente cada um,
+porque o índice do símbolo é por ORDEM de aparição, não por medicamento:
+"Atenolol" saía como círculo E como losango). `dedupCandidatos` (chave =
+nome normalizado sem acento + qtd + turnos ordenados) roda no fim de
+`parseReceita`, antes de `autoImportarReceita`. Achado só porque o teste
+usou o PDF real com Playwright de ponta a ponta — nenhuma reconstrução
+manual de texto reproduz a duplicação de via, porque ninguém digitaria o
+texto duas vezes por engano. **Lição:** teste de import de receita SEMPRE
+com o arquivo PDF/foto de verdade num navegador real, nunca só com texto
+reconstruído à mão — a extração de PDF real tem estrutura (colunas, vias,
+posição) que reconstrução manual não reproduz.
 
 **Quadrinho "cor da caixa" (2026-09-09).** Adicionado ao `.med-card`, ACIMA
 do símbolo geométrico — dashed box em branco onde o cuidador pinta ou

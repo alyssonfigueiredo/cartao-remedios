@@ -615,11 +615,29 @@ function detectarTurnos(texto){
   return { turnos: Array.from(turnos), alertaExtra };
 }
 
+// receituário do e-SUS/PEC costuma sair com 2 vias (farmácia + paciente) na
+// MESMA página/PDF — o mesmo remédio aparece 2x no texto extraído. Sem isso
+// cada medicamento vira 2 cards idênticos no cartão (achado testando com uma
+// receita real de 4 medicamentos: virava 8 sem aviso nenhum).
+function normalizarNomeMed(s){
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+function dedupCandidatos(candidatos){
+  const vistos = new Set();
+  return candidatos.filter(c => {
+    const chave = normalizarNomeMed(c.nomeRaw) + '|' + c.qtd + '|' + [...c.turnos].sort().join(',');
+    if(vistos.has(chave)) return false;
+    vistos.add(chave);
+    return true;
+  });
+}
+
 function parseReceita(texto){
-  return extrairBlocosMedicamento(texto).map(b => {
+  const brutos = extrairBlocosMedicamento(texto).map(b => {
     const { turnos, alertaExtra } = detectarTurnos(b.texto);
     return { nomeRaw: b.nome, qtd: detectarQtdPorTomada(b.texto), turnos, alertaExtra, freqTexto: b.texto };
   });
+  return dedupCandidatos(brutos);
 }
 
 // Receita já é a prescrição do próprio médico — entra direto no cartão, sem
