@@ -227,11 +227,11 @@
   <!-- ===================== PAINEL DE EDICAO ===================== -->
   <div id="controls" class="no-print">
     <h1>Gerador de cartão de remédios</h1>
-    <p class="sub">Cada remédio recebe um <b>símbolo geométrico</b> diferente (não depende de cor). Peça para alguém desenhar o mesmo símbolo, com caneta, na caixa real do remédio — o paciente casa o símbolo do cartão com o da caixa, mesmo em preto e branco.</p>
+    <p class="sub">Cada remédio ganha um <b>símbolo geométrico</b> próprio — desenhe o mesmo símbolo na caixa real e o paciente casa os dois, mesmo sem cor.</p>
 
     <div class="modo-box">
-      <label><input type="checkbox" id="modoCor"> Esta unidade tem impressora colorida</label>
-      <div class="desc">Se marcar, os símbolos ganham cor como reforço extra. Se deixar desmarcado (padrão), tudo é desenhado só em preto e branco — e continua funcionando igual.</div>
+      <label><input type="checkbox" id="modoCor"> Impressora colorida</label>
+      <div class="desc">Cor vira reforço extra nos símbolos. Desmarcado (padrão): só preto e branco.</div>
     </div>
 
     <label>Nome do paciente</label>
@@ -241,7 +241,7 @@
 
     <div class="import-box">
       <label style="margin-top:0">📷 Importar de receita (foto ou PDF)</label>
-      <div class="desc">Os medicamentos identificados entram direto no cartão. A leitura pode errar nome, dose ou horário — confira a lista abaixo (e o texto lido) antes de imprimir; dá pra editar ou remover qualquer item ali mesmo.</div>
+      <div class="desc">Entra direto no cartão. Confira a lista abaixo antes de imprimir — dá pra editar ou remover ali mesmo.</div>
       <input type="file" id="receitaInput" accept="image/*,application/pdf">
       <button id="receitaBtn" type="button">Ler receita</button>
       <div id="receitaStatus"></div>
@@ -300,11 +300,11 @@
     <label>Rodapé (médico / unidade)</label>
     <textarea id="rodapeInput">Dr. Alysson Dyego de Figueiredo de Araujo - CRM-PR 49769 - Estratégia de Saúde da Família - Agudos do Sul/PR</textarea>
 
-    <label class="fit1-label"><input type="checkbox" id="fit1Pagina"> Ajustar para caber em 1 página (quando possível)</label>
+    <label class="fit1-label"><input type="checkbox" id="fit1Pagina" checked> Ajustar para caber em 1 página (quando possível)</label>
     <div id="fit1PaginaAviso" class="fit1-aviso">Não coube numa página só nem no tamanho mínimo legível — vai sair em mais de uma folha mesmo assim.</div>
 
     <button id="printBtn" type="button">🖨 Imprimir / salvar PDF</button>
-    <p class="hint">A folha ao lado é o que será impresso. Nada aqui fica salvo — ao fechar a página, comece de novo para o próximo paciente.</p>
+    <p class="hint">Nada fica salvo — ao fechar a página, comece de novo para o próximo paciente.</p>
   </div>
 
   <!-- ===================== FOLHA IMPRIMIVEL ===================== -->
@@ -312,7 +312,7 @@
     <div class="head">
       <h2 contenteditable="true">MEUS REMÉDIOS</h2>
       <div class="paciente" contenteditable="true" id="pacienteOut">NOME DO PACIENTE</div>
-      <div class="obs" contenteditable="true">Peça para alguém desenhar, com caneta, o mesmo símbolo de cada remédio na caixa real. No quadrinho tracejado, pinte ou escreva a cor da caixa de verdade.</div>
+      <div class="obs" contenteditable="true">Desenhe o mesmo símbolo na caixa real de cada remédio. No quadrinho tracejado, marque a cor da caixa.</div>
     </div>
 
     <div id="turnosOut"></div>
@@ -496,7 +496,7 @@ function render(){
           <div class="med-card">
             <div class="cor-caixa-box"><span>cor da<br>caixa</span></div>
             <div class="glyph-wrap">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>
-            <div class="marcar-caixa">desenhe este símbolo<br>na caixa do remédio</div>
+            <div class="marcar-caixa">desenhe na caixa</div>
             <div class="contagem">${Array(Number(m.qtd)).fill('<span class="pip"></span>').join('')}</div>
             <div class="med-name">${m.nome}</div>
             ${m.dose ? `<div class="med-dose">${m.dose}</div>` : ''}

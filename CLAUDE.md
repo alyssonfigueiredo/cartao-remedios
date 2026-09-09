@@ -232,6 +232,21 @@ continua sendo o código que o app garante ser único por medicamento.
   de `detectarTurnos`/`extrairBlocosMedicamento` contra receitas reais
   antes de confiar em uso clínico sem revisão atenta do texto bruto.
 
+## Padrão pré-definido e texto sintético (2026-09-09)
+- `#fit1Pagina` (ajustar para caber em 1 página) nasce **marcado por padrão**
+  no HTML — pedido explícito pra já sair "pronto pra uma folha só" sem o
+  médico precisar lembrar de ligar. Continua respeitando o piso de
+  legibilidade (`FIT1_FATOR_MIN`) e o aviso quando não cabe.
+- Textos do painel de edição e da folha impressa foram encurtados (queixa:
+  "tem muito texto na página") — `.sub`, `.modo-box .desc`, `.import-box
+  .desc`, `.hint`, `.obs` do cartão e `.marcar-caixa` de cada card. Cortou
+  frase redundante, manteve a instrução essencial. Paleta/fontes seguem
+  copiadas de `assets/tokens.css` do soaperando (confirmado direto no
+  arquivo-fonte, não no site renderizado) — `--brand:#0f766e`, Plus Jakarta
+  Sans; é a mesma paleta usada por `index.html` do soaperando (o teal
+  `crystal-tokens.css` é só da tela de login/acesso, não usar como
+  referência aqui).
+
 ## Possíveis próximos passos (não pedidos ainda, só ideias em aberto)
 - Persistir múltiplos pacientes numa sessão (lista salva localmente).
 - Exportar/importar lista de medicamentos comuns (evitar redigitar Losartana
