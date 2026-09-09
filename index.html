@@ -153,13 +153,15 @@
   .turno-box:last-child{margin-bottom:0;}
   .turno-band{display:flex; align-items:center; justify-content:space-between; padding:6mm 8mm;}
   .turno-band.turno-manha, .turno-band.turno-tarde{background:#fdf6e3;}
-  .turno-band.turno-noite{background:var(--ink);}
+  .turno-band.turno-noite{background:#eef1f5;}
   .turno-band .left{display:flex; align-items:center; gap:5mm;}
-  .turno-icon-wrap{width:19mm; height:19mm; flex-shrink:0;}
+  .turno-icon-wrap{width:19mm; height:19mm; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  /* Emblema escuro só atrás do ícone da noite (não a faixa inteira) — dá o
+     mesmo contraste pra lua branca aparecer, gastando bem menos toner que
+     pintar a faixa toda de preto. */
+  .turno-icon-wrap.turno-icon-noite{border-radius:50%; background:var(--ink); padding:2mm; box-sizing:border-box;}
   .turno-band .titulo{font-size:23px; font-weight:800; font-family:var(--font-sans); color:var(--ink); letter-spacing:.02em;}
-  .turno-band.turno-noite .titulo{color:#fff;}
   .turno-band .total{font-size:15px; font-weight:700; color:var(--muted);}
-  .turno-band.turno-noite .total{color:#cfd8db;}
 
   .turno-grid{display:flex; flex-wrap:wrap; gap:9mm; padding:9mm 8mm; justify-content:center; align-content:center; flex:1;}
   .med-card{width:48mm; text-align:center;}
@@ -353,7 +355,11 @@ function starPoints(cx,cy,rOuter,rInner,n){
   return pts.join(' ');
 }
 
-const PATTERNS = ['solido','listrasDiag','pontos','xadrez','contorno'];
+// 'contorno' primeiro: o 1º ciclo de 8 remédios (o caso comum) imprime só o
+// contorno, sem preencher a forma de preto — muito mais barato em toner que
+// disco sólido, e continua igual de distinguível (a forma já é o código, o
+// preenchimento é só reforço quando os símbolos se repetem no 2º ciclo+).
+const PATTERNS = ['contorno','listrasDiag','pontos','xadrez','solido'];
 
 function patternDefs(id, pattern, cor, usaCor){
   if(usaCor){
@@ -398,14 +404,29 @@ function estrelinha(cx, cy, r){
 }
 function svgTurno(turno, cor, usaCor){
   if(turno === 'noite'){
+    // Lua crescente (geometria testada, tipo "Feather icons": raio da mordida
+    // sempre >= metade da distância entre os pontos do arco — com valor menor
+    // o SVG é INVÁLIDO e o navegador "conserta" sozinho virando um blob sem a
+    // mordida vazada, em vez da lua).
     return `<svg width="100%" height="100%" viewBox="0 0 100 100">
-      <path d="${estrelinha(16,20,7)}" fill="#fff"/>
-      <path d="${estrelinha(86,16,5.5)}" fill="#fff"/>
-      <path d="${estrelinha(80,74,6.5)}" fill="#fff"/>
-      <path d="M60 10 A38 38 0 1 0 60 90 A30 30 0 1 1 60 10 Z" fill="#fff"/>
+      <path d="${estrelinha(12,14,6)}" fill="#fff"/>
+      <path d="${estrelinha(90,88,5)}" fill="#fff"/>
+      <path d="M87.5 53.29 A37.5 37.5 0 1 1 46.71 12.5 A29.17 29.17 0 0 0 87.5 53.29 Z" fill="#fff"/>
     </svg>`;
   }
   const c = usaCor ? cor : '#1c1c1c';
+  if(turno === 'tarde'){
+    // xícara de chá com fumacinha — "hora do café/chá da tarde", contorno
+    // só (sem preenchimento), pra combinar com os outros ícones em economia
+    // de toner
+    return `<svg width="100%" height="100%" viewBox="0 0 100 100">
+      <path d="M38,38 Q34,29 40,23 Q46,17 42,8" fill="none" stroke="${c}" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M58,38 Q54,29 60,23 Q66,17 62,8" fill="none" stroke="${c}" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M28,46 L72,46 L66,80 Q50,88 34,80 Z" fill="none" stroke="${c}" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M71,52 Q90,52 90,66 Q90,80 71,76" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M18,88 Q50,98 82,88" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/>
+    </svg>`;
+  }
   let raios = '';
   for(let i = 0; i < 12; i++){
     const ang = i * Math.PI / 6;
@@ -413,7 +434,7 @@ function svgTurno(turno, cor, usaCor){
     const x2 = 50 + 44 * Math.cos(ang), y2 = 50 + 44 * Math.sin(ang);
     raios += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="7" stroke-linecap="round"/>`;
   }
-  return `<svg width="100%" height="100%" viewBox="0 0 100 100">${raios}<circle cx="50" cy="50" r="22" fill="${c}"/></svg>`;
+  return `<svg width="100%" height="100%" viewBox="0 0 100 100">${raios}<circle cx="50" cy="50" r="21" fill="none" stroke="${c}" stroke-width="6"/></svg>`;
 }
 
 const TURNO_META = {
@@ -463,7 +484,7 @@ function render(){
     box.className = 'turno-box';
     box.innerHTML = `
       <div class="turno-band turno-${turno}">
-        <div class="left"><span class="turno-icon-wrap">${svgTurno(turno, '#e8a316', usaCor)}</span><span class="titulo">${meta.titulo}</span></div>
+        <div class="left"><span class="turno-icon-wrap${turno === 'noite' ? ' turno-icon-noite' : ''}">${svgTurno(turno, '#e8a316', usaCor)}</span><span class="titulo">${meta.titulo}</span></div>
         <span class="total">${total} comprimido${total>1?'s':''}</span>
       </div>
       <div class="turno-grid">

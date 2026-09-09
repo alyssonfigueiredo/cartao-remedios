@@ -41,6 +41,16 @@ outro antes de commitar** — não há build/symlink automatizando isso.
   maiores (`.med-card` 48mm, `.glyph-wrap` 34mm) de propósito — pedido
   explícito do usuário pra preencher mais a folha A4 e ficar mais didático/
   visível (público-alvo inclui baixa visão, não só analfabetismo).
+- **Economia de toner (2026-09-09).** `PATTERNS` reordenado pra `contorno`
+  vir primeiro — o 1º ciclo de até 8 remédios (o caso comum) imprime só o
+  contorno da forma, não preenchida de preto sólido; `solido` foi pro fim
+  da lista, só usado se os símbolos ciclarem (>8 remédios distintos). A
+  faixa preta inteira da noite virou um emblema circular escuro
+  (`.turno-icon-wrap.turno-icon-noite`) só atrás do ícone da lua — mesmo
+  contraste que resolve o bug abaixo, muito menos tinta que pintar a
+  faixa toda. E "À TARDE" ganhou ícone próprio (antes reusava o sol da
+  manhã): xícara de chá com fumacinha, em contorno — `svgTurno(turno,...)`
+  tem 3 ramos agora (`noite`/`tarde`/manhã-padrão).
 - **Bug real corrigido (2026-09-09): a lua não aparecia na impressão P&B.**
   Navegador OMITE `background-color` na impressão por padrão (economia de
   tinta) a menos que o usuário marque manualmente "imprimir gráficos de
