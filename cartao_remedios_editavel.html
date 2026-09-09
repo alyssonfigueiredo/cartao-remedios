@@ -235,8 +235,12 @@
     filter:blur(2px);
   }
   .cor-caixa-box span{position:relative;}
-  .contagem{display:flex; justify-content:center; gap:1.6mm; margin-bottom:2.5mm; flex-wrap:wrap;}
-  .contagem .pip{width:3.8mm; height:3.8mm; border-radius:50%; background:#000; display:inline-block;}
+  /* Traços grossos em vez de bolinha (pedido 2026-09-09) — mais rápido de
+     contar de relance e não parece "mais um símbolo geométrico" ao lado
+     do círculo/quadrado/triângulo do remédio (avaliado com mock lado a
+     lado antes de aplicar). */
+  .contagem{display:flex; justify-content:center; gap:2.4mm; margin-bottom:2.5mm; flex-wrap:wrap;}
+  .contagem .pip{width:3mm; height:11mm; background:#000; border-radius:1mm; display:inline-block;}
   /* substitui as bolinhas quando não faz sentido desenhar 1 por unidade —
      líquido (gotas/ml) ou quantidade de comprimido grande demais pra
      contar de relance (ver CONTAGEM_MAX_BOLINHAS). */

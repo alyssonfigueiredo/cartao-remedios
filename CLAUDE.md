@@ -364,6 +364,22 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Bolinha de contagem virou traço grosso (2026-09-09)
+Usuário achou que a bolinha (`.pip`, redonda) ainda podia confundir o
+paciente — parecida demais com "mais um símbolo geométrico" ao lado do
+círculo/quadrado/triângulo do remédio. Mock comparando 4 alternativas
+(traço vertical, tally de 5 com diagonal, tirinha de blister, risco
+horizontal) mostrado lado a lado com os símbolos reais antes de decidir —
+o tally só se justificaria se o teto de "vira numeral acima de 5" um dia
+mudasse, e o blister competia visualmente com o quadrado/círculo do
+remédio (borda dentro de borda). Vencedor: **traço grosso vertical**, sem
+elemento novo (só a marca, sem contorno ao redor). `.contagem .pip` foi de
+`width:3.8mm; height:3.8mm; border-radius:50%` (bolinha) pra
+`width:3mm; height:11mm; border-radius:1mm` (traço), com `gap` de 1.6mm
+pra 2.4mm (mais espaçado, pedido explícito). Nome da classe CSS/JS
+(`pip`) não mudou — só a aparência; `renderContagem()` não precisou de
+nenhuma alteração.
+
 ## 4 bugs reais achados testando com receitas reais no navegador (2026-09-09)
 Usuário pediu pra testar com PDF real dele antes de confiar na extração —
 pedido certeiro: 3 dos 4 bugs abaixo só existem com dado real (e-SUS de
