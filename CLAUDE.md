@@ -326,6 +326,23 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Folha só aparece depois do 1º medicamento (2026-09-09)
+Usuário notou que a folha A4 em branco (`#sheet`) sempre visível à direita,
+mesmo antes de qualquer medicamento, confundia — parecia erro/vazio em vez
+de "ainda não preenchi nada", e ocupava metade da tela sem função alguma
+nesse momento. `#sheet` nasce com `display:none` (era `flex`) e ganha a
+classe `.visivel` (toggle em `render()`, junto do resto da renderização)
+só quando `medicamentos.length > 0` — com uma pequena animação de entrada
+(`sheetIn`, fade+slide 6px) pra não ser um "pulo" seco na tela. No lugar
+dela, `#vazioInicial` (novo, `no-print`) mostra uma mensagem curta
+("O cartão aparece aqui... preencha um medicamento e clique em +
+Adicionar") — visível só enquanto a lista está vazia, mesma lógica de
+toggle. `.empty-msg` (mensagem antiga DENTRO do `#sheet` vazio) foi
+removida — não fazia mais sentido com a folha inteira escondida.
+Validado com Playwright: estado inicial mostra só a coluna do formulário
+(sem a folha), e ao adicionar o 1º remédio a folha completa aparece do
+lado.
+
 ## Possíveis próximos passos (não pedidos ainda, só ideias em aberto)
 - Persistir múltiplos pacientes numa sessão (lista salva localmente).
 - Exportar/importar lista de medicamentos comuns (evitar redigitar Losartana

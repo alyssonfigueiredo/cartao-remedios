@@ -141,12 +141,27 @@
   .fit1-aviso{display:none; font-size:11px; color:var(--danger-strong); margin-top:5px; line-height:1.4;}
   .fit1-aviso.mostrar{display:block;}
 
-  /* ---------- folha imprimivel ---------- */
+  /* ---------- folha imprimivel ----------
+     Some por padrão: uma A4 em branco ao lado do formulário, antes de
+     qualquer medicamento, só confundia (pedido 2026-09-09) — o médico via
+     uma folha vazia sem entender se era erro ou o que preencher. Ela nasce
+     na tela só depois do 1º medicamento adicionado (ver render()). */
   #sheet{
     width:210mm; min-height:297mm; background:var(--paper); padding:10mm 12mm;
     box-shadow:0 0 0 1px var(--border), var(--shadow-sm);
-    display:flex; flex-direction:column;
+    display:none; flex-direction:column;
+    animation:sheetIn .25s ease-out;
   }
+  #sheet.visivel{display:flex;}
+  @keyframes sheetIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- estado inicial (sem a folha ainda) ---------- */
+  #vazioInicial{
+    width:400px; padding:26px 20px; text-align:center; color:var(--text-muted);
+    font-size:12.5px; line-height:1.6;
+  }
+  #vazioInicial .ico{font-size:26px; display:block; margin-bottom:8px;}
+  #vazioInicial b{color:var(--text-2);}
   .head{text-align:center; margin-bottom:7mm; position:relative;}
   .head .brand-mark{position:absolute; top:0; left:0; width:14mm; height:14mm; border-radius:4mm;}
   .head h2{font-size:32px; font-weight:800; margin:0 0 2mm; letter-spacing:.5px; color:var(--ink); font-family:var(--font-sans);}
@@ -193,8 +208,6 @@
 
   .foot{text-align:center; font-size:9px; color:var(--muted); margin-top:4mm;}
   .foot[contenteditable]:hover{border-bottom:1px dashed #bbb;}
-
-  .empty-msg{padding:10mm; text-align:center; color:var(--text-faint); font-size:11px;}
 
   /* ---------- importar receita ---------- */
   .import-box{background:var(--surface-brand); border:1px solid var(--border-strong); border-radius:var(--r-lg); padding:12px;}
@@ -337,6 +350,13 @@
 
     <button id="printBtn" type="button">🖨 Imprimir / salvar PDF</button>
     <p class="hint">Nada fica salvo — ao fechar a página, comece de novo para o próximo paciente.</p>
+  </div>
+
+  <!-- ===================== ESTADO INICIAL (sem medicamento ainda) ===================== -->
+  <div id="vazioInicial" class="no-print">
+    <span class="ico">💊</span>
+    <b>O cartão aparece aqui</b><br>
+    Preencha um medicamento no formulário à esquerda e clique em "+ Adicionar" — a folha pronta pra imprimir surge nesta coluna.
   </div>
 
   <!-- ===================== FOLHA IMPRIMIVEL ===================== -->
@@ -542,9 +562,11 @@ function render(){
     out.appendChild(box);
   });
 
-  if(medicamentos.length === 0){
-    out.innerHTML = '<div class="empty-msg">Adicione medicamentos no painel à esquerda para montar o cartão.</div>';
-  }
+  const sheet = document.getElementById('sheet');
+  const vazio = document.getElementById('vazioInicial');
+  const temMed = medicamentos.length > 0;
+  sheet.classList.toggle('visivel', temMed);
+  vazio.style.display = temMed ? 'none' : 'block';
 
   ajustarParaCaberEmUmaPagina();
 }
