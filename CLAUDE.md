@@ -332,6 +332,20 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Importar mais de uma receita/foto de uma vez (2026-09-09)
+`#receitaInput` ganhou `multiple` — usuário pode selecionar 2+ arquivos
+(ex.: 2 receitas separadas, ou várias fotos de embalagem) numa única
+escolha. `lerReceitaSelecionada()` virou um laço: lê cada arquivo em
+sequência com `extrairTextoArquivo` (status mostra "Lendo arquivo N/M..."
+quando há mais de 1), concatena todo o texto extraído e processa como
+receita única (`parseReceita` + `autoImportarReceita`, sem mudança nos
+dois) — os medicamentos de todos os arquivos entram juntos na mesma folha.
+`dedupCandidatos` (já existente, criado pro caso de 2 vias do e-SUS no
+mesmo PDF) cobre de graça o usuário anexar o mesmo arquivo 2x sem querer.
+Sequencial de propósito, não paralelo — mantém a ordem do status legível
+e evita rodar todo o OCR ao mesmo tempo se o médico anexar várias fotos
+grandes.
+
 ## Leitura de receita dispara sozinha ao anexar (2026-09-09)
 Usuário tinha que escolher o arquivo E lembrar de clicar em "Ler receita"
 — passo fácil de esquecer, e nada avisava se esquecesse (arquivo escolhido,
