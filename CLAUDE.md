@@ -332,6 +332,18 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Leitura de receita dispara sozinha ao anexar (2026-09-09)
+Usuário tinha que escolher o arquivo E lembrar de clicar em "Ler receita"
+— passo fácil de esquecer, e nada avisava se esquecesse (arquivo escolhido,
+nada acontece). A lógica do clique virou a função nomeada
+`lerReceitaSelecionada()`, chamada tanto pelo botão quanto por um listener
+`change` no próprio `#receitaInput` — a leitura começa assim que o arquivo
+é anexado, sem esperar clique nenhum. O botão continua existindo, mas
+virou "↻ Ler de novo" (reprocessa o mesmo arquivo — útil se o 1º OCR saiu
+ruim ou algo falhou). Validado com Playwright: `setInputFiles` sozinho
+(sem `.click()` no botão) já dispara `#receitaStatus` mudando pra
+"Processando...".
+
 ## Folha só aparece depois do 1º medicamento (2026-09-09, ajustado no mesmo dia)
 Usuário notou que a folha A4 em branco (`#sheet`) sempre visível à direita,
 mesmo antes de qualquer medicamento, confundia — parecia erro/vazio em vez

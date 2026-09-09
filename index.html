@@ -284,9 +284,9 @@
 
     <div class="import-box">
       <label style="margin-top:0">📷 Importar de receita (foto ou PDF)</label>
-      <div class="desc">Entra direto na receita. Confira a lista abaixo antes de imprimir — dá pra editar ou remover ali mesmo.</div>
+      <div class="desc">Assim que você anexar o arquivo, a leitura começa sozinha e os medicamentos já entram na receita. Confira a lista abaixo antes de imprimir — dá pra editar ou remover ali mesmo.</div>
       <input type="file" id="receitaInput" accept="image/*,application/pdf">
-      <button id="receitaBtn" type="button">Ler receita</button>
+      <button id="receitaBtn" type="button">↻ Ler de novo</button>
       <div id="receitaStatus"></div>
       <div id="receitaTextoBox">
         <label>Texto lido (edite se algo saiu errado e clique em reprocessar)</label>
@@ -855,7 +855,10 @@ async function extrairTextoArquivo(file, statusEl){
   return text;
 }
 
-document.getElementById('receitaBtn').onclick = async () => {
+// Lê o arquivo já escolhido (chamada automática ao anexar E pelo botão manual,
+// que agora serve de "ler de novo" — útil se o navegador não disparar o
+// evento de anexo por algum motivo, ou pra reler o mesmo arquivo).
+async function lerReceitaSelecionada(){
   const file = document.getElementById('receitaInput').files[0];
   const status = document.getElementById('receitaStatus');
   const btn = document.getElementById('receitaBtn');
@@ -876,7 +879,15 @@ document.getElementById('receitaBtn').onclick = async () => {
   } finally {
     btn.disabled = false;
   }
-};
+}
+
+document.getElementById('receitaBtn').onclick = lerReceitaSelecionada;
+
+// Leitura automática ao anexar — usuário não precisa lembrar de clicar em
+// "Ler receita" depois de escolher o arquivo (pedido 2026-09-09).
+document.getElementById('receitaInput').addEventListener('change', () => {
+  if(document.getElementById('receitaInput').files[0]) lerReceitaSelecionada();
+});
 
 document.getElementById('reprocessarBtn').onclick = () => {
   autoImportarReceita(parseReceita(document.getElementById('receitaTexto').value));
