@@ -1,19 +1,30 @@
-# Receita Acessível — cartão de remédios para pacientes analfabetos
+# SOAdesão — cartão de remédios para pacientes analfabetos
 
-**Nome da ferramenta (2026-09-09, renomeado de novo no mesmo dia): "Receita
-Acessível".** Nome de arquivo/repo (`cartao-remedios`,
-`cartao_remedios_editavel.html`) não mudou — só o nome visível pro usuário
-(título da aba, cabeçalho do painel). Passou por 2 nomes no mesmo dia:
-"Gerador de cartão de remédios" → "Receita Visual" (comunicava que é uma
-receita em símbolos) → "Receita Acessível" (usuário pediu de novo: a
-palavra "cartão" ainda aparecia espalhada pelos textos da UI — descrição
-de importar, mensagens de status, botão de remover — então os textos
-visíveis foram trocados de "cartão"/"no cartão" para "receita"/"na
-receita" nesta 2ª rodada). O título do CARTÃO IMPRESSO em si ("MEUS
-REMÉDIOS", editável pelo médico por paciente) não mudou — é rótulo do
-documento que o paciente recebe, não o nome da ferramenta. Comentários
-internos do código (`// cartão pra paciente que não lê...`) não foram
-todos trocados — são jargão interno, não texto que o usuário vê.
+**Nome da ferramenta (2026-09-09, 3ª rodada de nome no mesmo dia): "SOAdesão".**
+Nome de arquivo/repo (`cartao-remedios`, `cartao_remedios_editavel.html`)
+não mudou — só o nome visível pro usuário (título da aba, cabeçalho do
+painel). Histórico completo do dia: "Gerador de cartão de remédios" →
+"Receita Visual" → "Receita Acessível" (textos da UI trocados de
+"cartão"/"no cartão" pra "receita"/"na receita") → **"SOAdesão"**, pensado
+pra incorporar como sub-ferramenta do soaperando (trocadilho "SOA" +
+"adesão" — termo clínico real, adesão ao tratamento, que é literalmente o
+que a ferramenta tenta melhorar). Discutido e descartado antes de fechar:
+"SOAcessível" (redundante — o título do documento impresso já é
+"Receituário Acessível", repetir "acessível" no nome do produto e no
+título logo abaixo soava eco) e "SOAexplicando" (genérico demais, poderia
+ser qualquer funcionalidade do soaperando). "SOAdesão" segue o mesmo
+padrão do próprio "SOAPerando": um trocadilho que não se auto-explica
+sozinho, mas funciona porque vem sempre com um subtítulo do lado
+("Receituário Acessível") fazendo esse trabalho — evitou repetir a mesma
+palavra duas vezes junto.
+
+**Título do CARTÃO IMPRESSO em si: "Receituário Acessível"** (2026-09-09,
+antes "MEUS REMÉDIOS") — pedido explícito do usuário depois de ver o mock
+mesclado (ver seção abaixo). É editável pelo médico por paciente
+(`contenteditable`), então nada impede trocar de volta na hora se quiser
+para um paciente específico. Comentários internos do código (`// cartão
+pra paciente que não lê...`) não foram todos trocados — são jargão
+interno, não texto que o usuário vê.
 
 ## Contexto
 Ferramenta para médico da Estratégia de Saúde da Família (Agudos do Sul/PR)
@@ -331,6 +342,59 @@ topo da folha (`.obs`); repetir por cartão era ruído.
   próprio pro `<pattern>` SVG, sem colisão entre as duas.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
+
+## Layout mesclado a partir de mock gerado por IA (2026-09-09)
+Usuário mandou uma imagem gerada por IA como referência de layout e pediu
+pra avaliar o que valia aproveitar. Processo: montei um mock estático
+separado (`scratchpad/mock-mesclado.html`, fora do app real) reutilizando
+as funções reais de `svgGlyph`/`svgTurno` pra comparar com fidelidade,
+mostrei screenshot, várias rodadas de ajuste conversando sobre o que
+pegar/rejeitar, só então portei pro arquivo de produção. **O que foi
+aproveitado do mock da IA:**
+- **Divisor vertical** (`.turno-divisor`, 1px) entre o título do turno e o
+  total de comprimidos, dentro de `.turno-band` — separa "o que é" de
+  "quanto é" sem gastar espaço extra.
+- **Cartão horizontal**: caixinha "cor da caixa" ao LADO do símbolo
+  (`.top-row`, flex row), não empilhada em cima — cartão mais baixo.
+  `.med-card` ganhou `border-left` (divisor fino entre cartões, tipo
+  colunas de tabela) em vez do gap solto de antes.
+- **Título do documento mais fino/discreto**: `.head h2` foi de
+  `font-weight:800`/32px pra `font-weight:300`/26px com
+  `letter-spacing:.14em` e uppercase — é rótulo de identificação, não
+  informação que o paciente precisa decodificar (quem carrega peso visual
+  continua sendo o título de turno e o nome do remédio, ambos 800).
+  Exigiu adicionar o peso 300 ao `@import` do Google Fonts (só vinha
+  400-800).
+
+**O que foi avaliado e REJEITADO de propósito** (registrar pra não
+reaparecer como "esqueceram disso"):
+- **Fileira-legenda de símbolos pequenos** (`.turno-legenda`, existia
+  numa versão anterior do mesmo dia) — avaliação do usuário: repete os
+  mesmos símbolos que já aparecem grandes 2 linhas abaixo, sem
+  acrescentar informação, e quebra o ritmo visual antes do cartão de
+  verdade. Removida (HTML do `render()` + CSS).
+- **Total do turno como única contagem** (o mock da IA não mostra pips
+  de contagem por remédio, só o total agregado no cabeçalho) — mantive as
+  bolinhas de contagem por cartão (`.contagem`): pra um paciente que toma
+  2+ remédios no mesmo turno, o total sozinho não diz quantos comprimidos
+  de CADA um, e é exatamente esse dado que evita erro de dose.
+- **Cabeçalho com logo+tagline do soaperando + selo do SUS** — são
+  elementos de marca específicos daquela referência; o cabeçalho atual
+  (logo + nome da ferramenta) já cumpre o mesmo papel de identificação.
+
+**Bug real achado NO PROCESSO (não fazia parte do pedido): flex-wrap
+multi-linha esticava o divisor até o fundo da caixa.** Com `.turno-grid`
+em `display:flex; flex-wrap:wrap`, quando o nº de remédios não enche a
+última linha exatamente (ex.: 3 remédios, 2 numa linha + 1 sozinho na
+linha de baixo), o comportamento padrão do `align-content`/`align-items`
+("stretch") distribui o espaço vertical sobrando do `.turno-grid`
+(`flex:1`) entre as linhas — e como `.med-card` tem `border-left`, esse
+divisor esticava junto até o fim da caixa do turno inteiro, uma linha
+vertical solta sem função. Fix: `align-content:flex-start;
+align-items:flex-start;` no `.turno-grid` — cada linha (e cada card)
+passa a ter só a altura do próprio conteúdo. Validado visualmente com
+Playwright, com uma receita real de 3+2+2 remédios (o caso que reproduzia
+o bug, 3 não é múltiplo do que cabe por linha).
 
 ## Bug real corrigido: preenchimento sólido/colorido não aparecia (2026-09-09)
 Achado por acaso construindo um mock pra comparar layout (não fazia parte
