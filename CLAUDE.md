@@ -247,6 +247,18 @@ continua sendo o código que o app garante ser único por medicamento.
   `crystal-tokens.css` é só da tela de login/acesso, não usar como
   referência aqui).
 
+## Logo (2026-09-09)
+`logo.png` (256×256, mesmo arquivo do soaperando — decisão do usuário: é a
+mesma marca do consultório, reaproveitar em vez de criar ícone novo) vive
+na raiz, ao lado de `cartao_remedios_editavel.html`/`index.html`. Dois
+lugares: `#controls .brand-row` (painel de edição, 34px ao lado do título,
+não imprime) e `.head .brand-mark` (canto superior esquerdo do cabeçalho
+impresso, 14mm, position:absolute sobre `.head{position:relative}` —
+não desloca o título centralizado). Print-color-adjust já cobre `*`, então
+sai colorido mesmo em impressora P&B convertendo pra cinza sozinha; é
+decorativo (marca do consultório), não símbolo funcional do cartão — não
+compete com a regra "símbolo é o identificador primário".
+
 ## Possíveis próximos passos (não pedidos ainda, só ideias em aberto)
 - Persistir múltiplos pacientes numa sessão (lista salva localmente).
 - Exportar/importar lista de medicamentos comuns (evitar redigitar Losartana

@@ -84,7 +84,9 @@
     padding:20px;
     height:fit-content;
   }
-  #controls h1{font-size:18px; font-weight:800; letter-spacing:-.01em; color:var(--brand-deep); margin:0 0 4px;}
+  #controls .brand-row{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  #controls .brand-row img{width:34px; height:34px; border-radius:9px; flex-shrink:0;}
+  #controls h1{font-size:18px; font-weight:800; letter-spacing:-.01em; color:var(--brand-deep); margin:0;}
   #controls p.sub{margin:0 0 16px; font-size:12.5px; color:var(--text-muted); line-height:1.5;}
   #controls label{
     display:block; margin:14px 0 5px;
@@ -145,7 +147,8 @@
     box-shadow:0 0 0 1px var(--border), var(--shadow-sm);
     display:flex; flex-direction:column;
   }
-  .head{text-align:center; margin-bottom:7mm;}
+  .head{text-align:center; margin-bottom:7mm; position:relative;}
+  .head .brand-mark{position:absolute; top:0; left:0; width:14mm; height:14mm; border-radius:4mm;}
   .head h2{font-size:32px; font-weight:800; margin:0 0 2mm; letter-spacing:.5px; color:var(--ink); font-family:var(--font-sans);}
   .head .paciente{font-size:19px; font-weight:700; margin:0 0 2mm; color:var(--ink);}
   .head .obs{font-size:11.5px; color:var(--muted); max-width:160mm; margin:0 auto;}
@@ -226,7 +229,7 @@
 
   <!-- ===================== PAINEL DE EDICAO ===================== -->
   <div id="controls" class="no-print">
-    <h1>Gerador de cartão de remédios</h1>
+    <div class="brand-row"><img src="logo.png" alt=""><h1>Gerador de cartão de remédios</h1></div>
     <p class="sub">Cada remédio ganha um <b>símbolo geométrico</b> próprio — desenhe o mesmo símbolo na caixa real e o paciente casa os dois, mesmo sem cor.</p>
 
     <div class="modo-box">
@@ -310,6 +313,7 @@
   <!-- ===================== FOLHA IMPRIMIVEL ===================== -->
   <div id="sheet">
     <div class="head">
+      <img class="brand-mark" src="logo.png" alt="">
       <h2 contenteditable="true">MEUS REMÉDIOS</h2>
       <div class="paciente" contenteditable="true" id="pacienteOut">NOME DO PACIENTE</div>
       <div class="obs" contenteditable="true">Desenhe o mesmo símbolo na caixa real de cada remédio. No quadrinho tracejado, marque a cor da caixa.</div>
