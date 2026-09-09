@@ -201,9 +201,8 @@
   .cand-turnos{display:flex; gap:6px; white-space:nowrap;}
   .cand-turnos label{display:flex; align-items:center; gap:2px; font-weight:500; text-transform:none; color:var(--text);}
   .cand-turnos input{width:auto; margin:0;}
-  .candidato-chip .cand-add{margin-top:6px; width:100%; padding:6px; background:var(--brand); color:#fff; border:none; border-radius:var(--r-sm); font-size:11px; font-weight:700; cursor:pointer;}
-  .candidato-chip .cand-add:hover:not(:disabled){filter:brightness(1.06);}
-  .candidato-chip .cand-add:disabled{background:var(--ok); cursor:default;}
+  .candidato-chip .cand-add{margin-top:6px; width:100%; padding:6px; background:var(--surface); color:var(--danger-strong); border:1px solid #f0d3d0; border-radius:var(--r-sm); font-size:11px; font-weight:700; cursor:pointer;}
+  .candidato-chip .cand-add:hover{background:#fdf1f0;}
   .cand-fonte{color:var(--text-faint); font-size:10px; margin-top:5px; font-style:italic;}
   .cand-alerta{color:var(--danger-strong); font-size:10.5px; margin-top:5px; font-weight:700;}
 
@@ -238,7 +237,7 @@
 
     <div class="import-box">
       <label style="margin-top:0">📷 Importar de receita (foto ou PDF)</label>
-      <div class="desc">A leitura é automática e pode errar nome, dose ou horário — confira e ajuste cada item antes de clicar em "adicionar". Nada é incluído no cartão sem essa confirmação.</div>
+      <div class="desc">Os medicamentos identificados entram direto no cartão. A leitura pode errar nome, dose ou horário — confira a lista abaixo (e o texto lido) antes de imprimir; dá pra editar ou remover qualquer item ali mesmo.</div>
       <input type="file" id="receitaInput" accept="image/*,application/pdf">
       <button id="receitaBtn" type="button">Ler receita</button>
       <div id="receitaStatus"></div>
@@ -623,51 +622,72 @@ function parseReceita(texto){
   });
 }
 
-function adicionarMedicamentoDaLista(nome, qtd, turnos){
-  const n = medicamentos.length;
-  const shapeIdx = n % SHAPES.length;
-  const patternIdx = Math.floor(n / SHAPES.length) % PATTERNS.length;
-  medicamentos.push({ nome, cor:'#0f766e', qtd, dose:'', turnos, shapeIdx, patternIdx });
+// Receita já é a prescrição do próprio médico — entra direto no cartão, sem
+// clique de confirmação por item (pedido 2026-09-09). A rede de segurança
+// que sobra: cada item importado continua editável/removível logo abaixo
+// (nome, qtd, turno), porque quem pode errar não é a receita, é a LEITURA
+// dela (OCR/posição de texto do PDF) — ver bugs reais corrigidos no CLAUDE.md.
+let importadosAtuais = []; // objetos (referência) já dentro de medicamentos[], vindos da última extração
+
+function autoImportarReceita(candidatos){
+  // reprocessar (depois de editar o texto bruto) substitui a leva anterior — nunca duplica
+  importadosAtuais.forEach(obj => {
+    const i = medicamentos.indexOf(obj);
+    if(i !== -1) medicamentos.splice(i, 1);
+  });
+  importadosAtuais = candidatos.map(c => {
+    const n = medicamentos.length;
+    const obj = {
+      nome: c.nomeRaw, cor: '#0f766e', qtd: c.qtd, dose: '', turnos: c.turnos,
+      shapeIdx: n % SHAPES.length, patternIdx: Math.floor(n / SHAPES.length) % PATTERNS.length,
+      _alertaExtra: c.alertaExtra, _freqTexto: c.freqTexto
+    };
+    medicamentos.push(obj);
+    return obj;
+  });
   render();
+  renderImportados();
 }
 
-function renderCandidatos(candidatos){
+function renderImportados(){
   const box = document.getElementById('candidatosList');
   box.innerHTML = '';
-  if(candidatos.length === 0){
+  if(importadosAtuais.length === 0){
     box.innerHTML = '<div class="cand-fonte">Nenhum medicamento identificado automaticamente — confira o texto lido acima e adicione manualmente no formulário abaixo.</div>';
     return;
   }
-  candidatos.forEach(c => {
+  importadosAtuais.forEach(obj => {
     const div = document.createElement('div');
     div.className = 'candidato-chip';
     div.innerHTML = `
       <div class="cand-linha">
-        <input type="text" class="cand-nome" value="${c.nomeRaw.replace(/"/g,'&quot;')}">
-        <input type="number" class="cand-qtd" value="${c.qtd}" min="1" max="9">
+        <input type="text" class="cand-nome" value="${obj.nome.replace(/"/g,'&quot;')}">
+        <input type="number" class="cand-qtd" value="${obj.qtd}" min="1" max="9">
       </div>
       <div class="cand-linha" style="margin-top:6px;">
         <span class="cand-turnos">
-          <label><input type="checkbox" class="cand-t" data-t="manha" ${c.turnos.includes('manha') ? 'checked' : ''}> Manhã</label>
-          <label><input type="checkbox" class="cand-t" data-t="tarde" ${c.turnos.includes('tarde') ? 'checked' : ''}> Tarde</label>
-          <label><input type="checkbox" class="cand-t" data-t="noite" ${c.turnos.includes('noite') ? 'checked' : ''}> Noite</label>
+          <label><input type="checkbox" class="cand-t" data-t="manha" ${obj.turnos.includes('manha') ? 'checked' : ''}> Manhã</label>
+          <label><input type="checkbox" class="cand-t" data-t="tarde" ${obj.turnos.includes('tarde') ? 'checked' : ''}> Tarde</label>
+          <label><input type="checkbox" class="cand-t" data-t="noite" ${obj.turnos.includes('noite') ? 'checked' : ''}> Noite</label>
         </span>
       </div>
-      ${c.alertaExtra ? '<div class="cand-alerta">⚠ parece ter mais de 3 tomadas/dia — confira o horário extra manualmente</div>' : ''}
-      <div class="cand-fonte">lido: "${c.freqTexto.slice(0,100)}${c.freqTexto.length > 100 ? '…' : ''}"</div>
-      <button type="button" class="cand-add">+ adicionar ao cartão</button>
+      ${obj._alertaExtra ? '<div class="cand-alerta">⚠ parece ter mais de 3 tomadas/dia — confira o horário extra manualmente</div>' : ''}
+      <div class="cand-fonte">✓ já no cartão — lido: "${(obj._freqTexto || '').slice(0,100)}${(obj._freqTexto || '').length > 100 ? '…' : ''}"</div>
+      <button type="button" class="cand-add cand-remover">🗑 remover do cartão</button>
     `;
-    div.querySelector('.cand-add').onclick = () => {
-      const nome = div.querySelector('.cand-nome').value.trim();
-      if(!nome) return;
-      const qtd = Number(div.querySelector('.cand-qtd').value) || 1;
-      const turnos = Array.from(div.querySelectorAll('.cand-t')).filter(cb => cb.checked).map(cb => cb.dataset.t);
-      if(turnos.length === 0){ alert('Marque ao menos um turno.'); return; }
-      adicionarMedicamentoDaLista(nome, qtd, turnos);
-      div.style.opacity = '.5';
-      const btn = div.querySelector('.cand-add');
-      btn.textContent = '✓ adicionado';
-      btn.disabled = true;
+    div.querySelector('.cand-nome').addEventListener('input', e => { obj.nome = e.target.value.trim() || obj.nome; render(); });
+    div.querySelector('.cand-qtd').addEventListener('input', e => { obj.qtd = Number(e.target.value) || 1; render(); });
+    div.querySelectorAll('.cand-t').forEach(cb => cb.addEventListener('change', () => {
+      const marcados = Array.from(div.querySelectorAll('.cand-t')).filter(x => x.checked).map(x => x.dataset.t);
+      obj.turnos = marcados.length ? marcados : ['manha']; // nunca deixar sem turno nenhum
+      render();
+    }));
+    div.querySelector('.cand-remover').onclick = () => {
+      const i = medicamentos.indexOf(obj);
+      if(i !== -1) medicamentos.splice(i, 1);
+      importadosAtuais = importadosAtuais.filter(o => o !== obj);
+      render();
+      renderImportados();
     };
     box.appendChild(div);
   });
@@ -746,9 +766,9 @@ document.getElementById('receitaBtn').onclick = async () => {
     document.getElementById('receitaTexto').value = texto;
     document.getElementById('receitaTextoBox').style.display = 'block';
     const candidatos = parseReceita(texto);
-    renderCandidatos(candidatos);
+    autoImportarReceita(candidatos);
     status.textContent = candidatos.length
-      ? `${candidatos.length} medicamento(s) identificado(s) — confira antes de adicionar.`
+      ? `${candidatos.length} medicamento(s) adicionado(s) automaticamente ao cartão — confira a lista abaixo (e o texto lido acima) antes de imprimir.`
       : 'Não identifiquei medicamentos automaticamente. Confira o texto lido e adicione manualmente.';
   } catch(e){
     status.textContent = 'Erro ao ler o arquivo: ' + e.message;
@@ -758,7 +778,7 @@ document.getElementById('receitaBtn').onclick = async () => {
 };
 
 document.getElementById('reprocessarBtn').onclick = () => {
-  renderCandidatos(parseReceita(document.getElementById('receitaTexto').value));
+  autoImportarReceita(parseReceita(document.getElementById('receitaTexto').value));
 };
 
 render();

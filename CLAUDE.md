@@ -107,14 +107,19 @@ medicamento. Fluxo:
 5. `detectarQtdPorTomada` (comprimidos/cápsulas/gotas/ml) e `detectarTurnos`
    (palavras manhã/tarde/noite/jejum/deitar, ou frequência tipo "8/8h"/
    "3x ao dia" convertida em nº de tomadas → turnos) rodam por bloco.
-6. Candidatos aparecem em `#candidatosList`, cada um com nome/qtd/turnos
-   **editáveis** e botão próprio "+ adicionar ao cartão" — nenhum
-   candidato entra na lista de medicamentos (`medicamentos[]`) sem esse
-   clique explícito. Mesmo princípio de segurança do soaperando (nunca
-   escrever automaticamente sem confirmação do médico): leitura de
-   receita erra nome/dose/horário com frequência real, e um remédio
-   errado nesse cartão é diretamente perigoso (o paciente não lê pra
-   conferir).
+6. **Entra direto no cartão, sem clique de confirmação (mudou 2026-09-09,
+   pedido do usuário: "se eu prescrevi, já está pronta").** `autoImportarReceita`
+   empurra cada candidato pra `medicamentos[]` imediatamente e chama `render()`
+   — o argumento original de "nunca escrever sem confirmação" (mesmo princípio
+   do soaperando) valia contra o risco de a RECEITA estar errada; aqui a receita
+   já é do próprio médico, o risco real é só a LEITURA dela (OCR/posição de
+   texto do PDF — ver os bugs reais abaixo). Rede de segurança que sobra:
+   `importadosAtuais` guarda referência aos objetos importados na última
+   leva, e `#candidatosList` renderiza cada um com nome/qtd/turno **editáveis
+   in-place** (edita direto o objeto que já está em `medicamentos[]`, sem
+   precisar remover e redigitar) e botão "🗑 remover do cartão". Reprocessar
+   o texto (depois de corrigir algo à mão) remove a leva anterior antes de
+   adicionar a nova — nunca duplica.
 
 **Bug real corrigido (2026-09-09) — importação não gerava nada com PDF do e-SUS.**
 Testado com receituário real (e-SUS, 4 medicamentos, "Atenolol 50mg 12/12h",
