@@ -1,13 +1,19 @@
-# Receita Visual — cartão de remédios para pacientes analfabetos
+# Receita Acessível — cartão de remédios para pacientes analfabetos
 
-**Nome da ferramenta (2026-09-09): "Receita Visual".** Nome de arquivo/repo
-(`cartao-remedios`, `cartao_remedios_editavel.html`) não mudou — só o
-nome visível pro usuário (título da aba, cabeçalho do painel). Motivo:
-usuário achou "Gerador de cartão de remédios" pouco intuitivo; "Receita
-Visual" comunica direto o que é (uma receita em símbolos, não em texto)
-sem precisar explicar "cartão". O título do CARTÃO IMPRESSO em si
-("MEUS REMÉDIOS", editável pelo médico por paciente) não mudou — é rótulo
-do documento que o paciente recebe, não o nome da ferramenta.
+**Nome da ferramenta (2026-09-09, renomeado de novo no mesmo dia): "Receita
+Acessível".** Nome de arquivo/repo (`cartao-remedios`,
+`cartao_remedios_editavel.html`) não mudou — só o nome visível pro usuário
+(título da aba, cabeçalho do painel). Passou por 2 nomes no mesmo dia:
+"Gerador de cartão de remédios" → "Receita Visual" (comunicava que é uma
+receita em símbolos) → "Receita Acessível" (usuário pediu de novo: a
+palavra "cartão" ainda aparecia espalhada pelos textos da UI — descrição
+de importar, mensagens de status, botão de remover — então os textos
+visíveis foram trocados de "cartão"/"no cartão" para "receita"/"na
+receita" nesta 2ª rodada). O título do CARTÃO IMPRESSO em si ("MEUS
+REMÉDIOS", editável pelo médico por paciente) não mudou — é rótulo do
+documento que o paciente recebe, não o nome da ferramenta. Comentários
+internos do código (`// cartão pra paciente que não lê...`) não foram
+todos trocados — são jargão interno, não texto que o usuário vê.
 
 ## Contexto
 Ferramenta para médico da Estratégia de Saúde da Família (Agudos do Sul/PR)
@@ -326,22 +332,31 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
-## Folha só aparece depois do 1º medicamento (2026-09-09)
+## Folha só aparece depois do 1º medicamento (2026-09-09, ajustado no mesmo dia)
 Usuário notou que a folha A4 em branco (`#sheet`) sempre visível à direita,
 mesmo antes de qualquer medicamento, confundia — parecia erro/vazio em vez
 de "ainda não preenchi nada", e ocupava metade da tela sem função alguma
 nesse momento. `#sheet` nasce com `display:none` (era `flex`) e ganha a
 classe `.visivel` (toggle em `render()`, junto do resto da renderização)
 só quando `medicamentos.length > 0` — com uma pequena animação de entrada
-(`sheetIn`, fade+slide 6px) pra não ser um "pulo" seco na tela. No lugar
-dela, `#vazioInicial` (novo, `no-print`) mostra uma mensagem curta
-("O cartão aparece aqui... preencha um medicamento e clique em +
-Adicionar") — visível só enquanto a lista está vazia, mesma lógica de
-toggle. `.empty-msg` (mensagem antiga DENTRO do `#sheet` vazio) foi
-removida — não fazia mais sentido com a folha inteira escondida.
-Validado com Playwright: estado inicial mostra só a coluna do formulário
-(sem a folha), e ao adicionar o 1º remédio a folha completa aparece do
-lado.
+(`sheetIn`, fade+slide 6px) pra não ser um "pulo" seco na tela.
+
+**1ª versão (revertida no mesmo dia): placeholder `#vazioInicial` na 2ª
+coluna.** Mostrava uma mensagem curta ("O cartão aparece aqui...") no
+lugar da folha enquanto vazio — mas o usuário pediu que a tela ficasse
+"toda com a primeira coluna" nesse estado, não com uma 2ª coluna estreita
+de aviso. `#vazioInicial` foi removido (HTML + CSS); no lugar, `#controls`
+ganha a classe `.solo` (mesmo toggle de `render()`, `!temMed`) que aumenta
+sua largura de 400px pra 640px — o formulário sozinho ocupa mais espaço
+central em vez de ficar cercado de branco vazio dos dois lados. Ao
+adicionar o 1º remédio, `.solo` sai e `#controls` volta a 400px enquanto
+a folha (`.visivel`) surge ao lado — layout de 2 colunas volta ao normal.
+`.empty-msg` (mensagem antiga DENTRO do `#sheet` vazio, de uma versão
+ainda anterior) já não existe.
+
+Validado com Playwright nos 2 estados: vazio (só a coluna do formulário,
+mais larga, sem a folha) e com 1 medicamento (formulário volta a 400px,
+folha aparece ao lado).
 
 ## Possíveis próximos passos (não pedidos ainda, só ideias em aberto)
 - Persistir múltiplos pacientes numa sessão (lista salva localmente).

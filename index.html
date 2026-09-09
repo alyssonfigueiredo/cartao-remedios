@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Receita Visual — cartão de remédios (P&B)</title>
+<title>Receita Acessível — gerador (P&B)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -83,7 +83,13 @@
     box-shadow:var(--shadow-sm);
     padding:20px;
     height:fit-content;
+    transition:width .2s ease;
   }
+  /* Sem nenhum medicamento ainda, a folha (2ª coluna) fica escondida —
+     sobrava tela vazia dos dois lados do formulário estreito. `.solo`
+     (toggle em render(), junto do resto) usa a largura livre pra deixar
+     o formulário mais respirável, não pra reorganizar o conteúdo. */
+  #controls.solo{width:640px;}
   #controls .brand-row{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
   #controls .brand-row img{width:34px; height:34px; border-radius:9px; flex-shrink:0;}
   #controls h1{font-size:18px; font-weight:800; letter-spacing:-.01em; color:var(--brand-deep); margin:0;}
@@ -154,14 +160,6 @@
   }
   #sheet.visivel{display:flex;}
   @keyframes sheetIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
-
-  /* ---------- estado inicial (sem a folha ainda) ---------- */
-  #vazioInicial{
-    width:400px; padding:26px 20px; text-align:center; color:var(--text-muted);
-    font-size:12.5px; line-height:1.6;
-  }
-  #vazioInicial .ico{font-size:26px; display:block; margin-bottom:8px;}
-  #vazioInicial b{color:var(--text-2);}
   .head{text-align:center; margin-bottom:7mm; position:relative;}
   .head .brand-mark{position:absolute; top:0; left:0; width:14mm; height:14mm; border-radius:4mm;}
   .head h2{font-size:32px; font-weight:800; margin:0 0 2mm; letter-spacing:.5px; color:var(--ink); font-family:var(--font-sans);}
@@ -271,7 +269,7 @@
 
   <!-- ===================== PAINEL DE EDICAO ===================== -->
   <div id="controls" class="no-print">
-    <div class="brand-row"><img src="logo.png" alt=""><h1>Receita Visual</h1></div>
+    <div class="brand-row"><img src="logo.png" alt=""><h1>Receita Acessível</h1></div>
     <p class="sub">Monta uma receita em símbolos, pra quem não sabe ler. Cada remédio ganha um <b>símbolo geométrico</b> próprio — desenhe o mesmo símbolo na caixa real e o paciente casa os dois, mesmo sem cor.</p>
 
     <div class="modo-box">
@@ -286,7 +284,7 @@
 
     <div class="import-box">
       <label style="margin-top:0">📷 Importar de receita (foto ou PDF)</label>
-      <div class="desc">Entra direto no cartão. Confira a lista abaixo antes de imprimir — dá pra editar ou remover ali mesmo.</div>
+      <div class="desc">Entra direto na receita. Confira a lista abaixo antes de imprimir — dá pra editar ou remover ali mesmo.</div>
       <input type="file" id="receitaInput" accept="image/*,application/pdf">
       <button id="receitaBtn" type="button">Ler receita</button>
       <div id="receitaStatus"></div>
@@ -350,13 +348,6 @@
 
     <button id="printBtn" type="button">🖨 Imprimir / salvar PDF</button>
     <p class="hint">Nada fica salvo — ao fechar a página, comece de novo para o próximo paciente.</p>
-  </div>
-
-  <!-- ===================== ESTADO INICIAL (sem medicamento ainda) ===================== -->
-  <div id="vazioInicial" class="no-print">
-    <span class="ico">💊</span>
-    <b>O cartão aparece aqui</b><br>
-    Preencha um medicamento no formulário à esquerda e clique em "+ Adicionar" — a folha pronta pra imprimir surge nesta coluna.
   </div>
 
   <!-- ===================== FOLHA IMPRIMIVEL ===================== -->
@@ -563,10 +554,9 @@ function render(){
   });
 
   const sheet = document.getElementById('sheet');
-  const vazio = document.getElementById('vazioInicial');
   const temMed = medicamentos.length > 0;
   sheet.classList.toggle('visivel', temMed);
-  vazio.style.display = temMed ? 'none' : 'block';
+  document.getElementById('controls').classList.toggle('solo', !temMed);
 
   ajustarParaCaberEmUmaPagina();
 }
@@ -783,8 +773,8 @@ function renderImportados(){
         </span>
       </div>
       ${obj._alertaExtra ? '<div class="cand-alerta">⚠ parece ter mais de 3 tomadas/dia — confira o horário extra manualmente</div>' : ''}
-      <div class="cand-fonte">✓ já no cartão — lido: "${(obj._freqTexto || '').slice(0,100)}${(obj._freqTexto || '').length > 100 ? '…' : ''}"</div>
-      <button type="button" class="cand-add cand-remover">🗑 remover do cartão</button>
+      <div class="cand-fonte">✓ já na receita — lido: "${(obj._freqTexto || '').slice(0,100)}${(obj._freqTexto || '').length > 100 ? '…' : ''}"</div>
+      <button type="button" class="cand-add cand-remover">🗑 remover da receita</button>
     `;
     div.querySelector('.cand-nome').addEventListener('input', e => { obj.nome = e.target.value.trim() || obj.nome; render(); });
     div.querySelector('.cand-qtd').addEventListener('input', e => { obj.qtd = Number(e.target.value) || 1; render(); });
@@ -879,7 +869,7 @@ document.getElementById('receitaBtn').onclick = async () => {
     const candidatos = parseReceita(texto);
     autoImportarReceita(candidatos);
     status.textContent = candidatos.length
-      ? `${candidatos.length} medicamento(s) adicionado(s) automaticamente ao cartão — confira a lista abaixo (e o texto lido acima) antes de imprimir.`
+      ? `${candidatos.length} medicamento(s) adicionado(s) automaticamente à receita — confira a lista abaixo (e o texto lido acima) antes de imprimir.`
       : 'Não identifiquei medicamentos automaticamente. Confira o texto lido e adicione manualmente.';
   } catch(e){
     status.textContent = 'Erro ao ler o arquivo: ' + e.message;
