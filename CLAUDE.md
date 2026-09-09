@@ -1,22 +1,24 @@
-# SOAdesão — cartão de remédios para pacientes analfabetos
+# Receita Fácil — cartão de remédios para pacientes analfabetos
 
-**Nome da ferramenta (2026-09-09, 3ª rodada de nome no mesmo dia): "SOAdesão".**
-Nome de arquivo/repo (`cartao-remedios`, `cartao_remedios_editavel.html`)
-não mudou — só o nome visível pro usuário (título da aba, cabeçalho do
-painel). Histórico completo do dia: "Gerador de cartão de remédios" →
-"Receita Visual" → "Receita Acessível" (textos da UI trocados de
-"cartão"/"no cartão" pra "receita"/"na receita") → **"SOAdesão"**, pensado
-pra incorporar como sub-ferramenta do soaperando (trocadilho "SOA" +
-"adesão" — termo clínico real, adesão ao tratamento, que é literalmente o
-que a ferramenta tenta melhorar). Discutido e descartado antes de fechar:
-"SOAcessível" (redundante — o título do documento impresso já é
-"Receituário Acessível", repetir "acessível" no nome do produto e no
-título logo abaixo soava eco) e "SOAexplicando" (genérico demais, poderia
-ser qualquer funcionalidade do soaperando). "SOAdesão" segue o mesmo
-padrão do próprio "SOAPerando": um trocadilho que não se auto-explica
-sozinho, mas funciona porque vem sempre com um subtítulo do lado
-("Receituário Acessível") fazendo esse trabalho — evitou repetir a mesma
-palavra duas vezes junto.
+**Nome da ferramenta (2026-09-09, 4ª e última rodada de nome no mesmo dia):
+"Receita Fácil".** Nome de arquivo/repo (`cartao-remedios`,
+`cartao_remedios_editavel.html`) não mudou — só o nome visível pro usuário
+(título da aba, cabeçalho do painel). Histórico completo do dia: "Gerador
+de cartão de remédios" → "Receita Visual" → "Receita Acessível" → "SOAdesão"
+(trocadilho "SOA" + adesão ao tratamento — termo clínico real, pensado pra
+incorporar como sub-ferramenta do soaperando, no mesmo padrão do próprio
+"SOAPerando": pun que não se auto-explica sozinho, funciona com subtítulo
+do lado) → **"Receita Fácil"**, decisão final. Motivo da troca de volta pra
+um nome sem trocadilho: o **domínio** já reservado pra essa ferramenta é
+`receitafacil.soaperando.com.br` (CNAME commitado antes de "SOAdesão"
+existir) — usar "SOAdesão" como nome do produto faria o domínio ficar
+`soadesao.soaperando.com.br`, com "soa" aparecendo 2x colado
+(SOA-desão-SOA-perando), estranho de falar em voz alta pro paciente. Além
+disso "Receita Fácil" é auto-explicativo sem precisar de subtítulo — mais
+importante aqui do que manter a família de trocadilhos "SOA*" do
+soaperando. "SOAcessível" também foi cogitado e descartado (redundante
+com o título do documento impresso, "Receituário Acessível" — repetir
+"acessível" nos dois soava eco).
 
 **Título do CARTÃO IMPRESSO em si: "Receituário Acessível"** (2026-09-09,
 antes "MEUS REMÉDIOS") — pedido explícito do usuário depois de ver o mock
@@ -231,13 +233,27 @@ com o arquivo PDF/foto de verdade num navegador real, nunca só com texto
 reconstruído à mão — a extração de PDF real tem estrutura (colunas, vias,
 posição) que reconstrução manual não reproduz.
 
-**Quadrinho "cor da caixa" (2026-09-09).** Adicionado ao `.med-card`, ACIMA
-do símbolo geométrico — dashed box em branco onde o cuidador pinta ou
-escreve a cor real da caixa do remédio (ideia validada com o usuário a
-partir de um mockup). Não inverte a prioridade símbolo-primeiro/cor-bônus
-da seção "Restrições de design" acima: funciona igual sem impressora
-colorida (é só um espaço pro cuidador desenhar/escrever à mão), o símbolo
-continua sendo o código que o app garante ser único por medicamento.
+**"Cor da caixa": de quadrinho tracejado pra frase simples (2026-09-09,
+2ª rodada).** Nasceu como dashed box em branco ao lado do símbolo, onde o
+cuidador pintaria/escreveria a cor real da caixa do remédio à mão. Testado
+com mock lado a lado de 3 variantes (caixa tracejada atual, só a frase
+cinza sem caixa, frase + linha pra escrever) mais uma 4ª cogitada no meio
+do processo (mesma caixa sem o tracejado, borda sólida) — essa última
+descartada sem nem virar opção formal: borda sólida sem conteúdo lia como
+elemento incompleto/quebrado, pior que o tracejado (que pelo menos é o
+código visual universal de "isso é rascunho, preencha"). Vencedora: **só
+a frase cinza `cor da caixa`, sem caixa nenhuma** (`.cor-caixa-label`,
+abaixo do `.glyph-wrap`, dentro do `.med-card`) — o quadrado ocupava
+espaço competindo com o símbolo bem na configuração horizontal de cartão
+que o layout mesclado (seção abaixo) introduziu no mesmo dia. Não inverte
+a prioridade símbolo-primeiro/cor-bônus da seção "Restrições de design"
+acima: funciona igual sem impressora colorida, é só um lembrete de onde
+anotar a cor à mão; o símbolo continua sendo o código que o app garante
+ser único por medicamento. A frase de instrução no topo da folha (`.obs`)
+que dizia "No quadrinho tracejado, marque a cor da caixa" foi atualizada
+pra "Onde disser 'cor da caixa', anote a cor real da caixa" — texto
+desatualizado apontando pra um elemento que não existe mais confundiria
+mais que ajudaria.
 
 **Limitações conhecidas / não resolvidas ainda:**
 - `detectarTurnos` cobre só 3 turnos (manhã/tarde/noite); frequência >3x/dia
