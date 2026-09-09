@@ -77,6 +77,42 @@ outro antes de commitar** — não há build/symlink automatizando isso.
 - Sem persistência entre pacientes (proposital, é ferramenta de uso único
   por atendimento — abrir, preencher, imprimir, fechar).
 
+## Ajustar para caber em 1 página (2026-09-09)
+
+Checkbox `#fit1Pagina` (perto do botão imprimir). Quando ligado,
+`ajustarParaCaberEmUmaPagina()` (chamada no fim de `render()` e no `change`
+do checkbox) mede `#sheet.scrollHeight`, compara com a altura de uma A4
+(`297mm` convertida em px a `96/25.4` px/mm — mesma conta que os artboards
+de impressão usam) e, se estourar, aplica `sheet.style.zoom = fator`
+(`fator = alturaPáginaPx / alturaAtualPx`, nunca abaixo de `FIT1_FATOR_MIN
+= 0.55`). `zoom` foi escolhido em vez de `transform:scale()` de propósito:
+`transform` só afeta o desenho, a paginação de impressão continua
+calculando com o tamanho ORIGINAL (o navegador ache que ainda precisa de
+2 páginas mesmo com tudo visualmente menor); `zoom` recalcula o layout de
+verdade, então a paginação real também encolhe — confirmado gerando PDF de
+verdade (Playwright, `page.pdf({printBackground:true})`): 8 medicamentos
+em 2 turnos saíam em 2 páginas sem o ajuste e em 1 com ele ligado, fator
+calculado automaticamente (0.5868 nesse caso).
+
+**"Quando viável" é literal — nunca força abaixo do piso de legibilidade.**
+Se o fator necessário for menor que `FIT1_FATOR_MIN`, aplica o piso mesmo
+assim (melhor um pouco menor que nada) e mostra `#fit1PaginaAviso` avisando
+que não coube nem no mínimo — vai sair em mais de uma folha de qualquer
+jeito. Cartão pra paciente que não lê não pode virar cartão minúsculo
+ilegível só pra caber numa folha; testado com um caso absurdo (9
+medicamentos × 3 turnos = 27 cards) pra confirmar que o aviso aparece em
+vez de forçar um zoom inútil.
+
+Efeito colateral aceito: como `zoom` encolhe a caixa inteira (`#sheet` tem
+`width:210mm`), a folha reduzida também fica mais ESTREITA que a A4 —
+sobra margem lateral em vez de só cortar a altura. Mesmo trade-off que
+qualquer "encaixar na página" de leitor de PDF; não vale a complexidade de
+encolher só a altura mantendo a largura cheia.
+
+`zoom` é suporte amplo hoje (Chrome/Edge/Safari sempre, Firefox 126+,
+2024) — não teve fallback pensado pra Firefox mais antigo porque o
+navegador do consultório é Chrome/Edge.
+
 ## Restrições de design que já foram validadas com o usuário
 - Símbolo geométrico é o código PRINCIPAL, cor é sempre só bônus opcional
   — nunca inverter essa prioridade.

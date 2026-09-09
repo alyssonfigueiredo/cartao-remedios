@@ -134,6 +134,10 @@
   }
   #printBtn:hover{filter:brightness(1.06);}
   .hint{font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.5;}
+  .fit1-label{display:flex; align-items:center; gap:7px; margin:14px 0 0; font-size:12.5px; font-weight:700; text-transform:none; letter-spacing:0; color:var(--brand-strong);}
+  .fit1-label input{width:auto;}
+  .fit1-aviso{display:none; font-size:11px; color:var(--danger-strong); margin-top:5px; line-height:1.4;}
+  .fit1-aviso.mostrar{display:block;}
 
   /* ---------- folha imprimivel ---------- */
   #sheet{
@@ -295,6 +299,9 @@
 
     <label>Rodapé (médico / unidade)</label>
     <textarea id="rodapeInput">Dr. Alysson Dyego de Figueiredo de Araujo - CRM-PR 49769 - Estratégia de Saúde da Família - Agudos do Sul/PR</textarea>
+
+    <label class="fit1-label"><input type="checkbox" id="fit1Pagina"> Ajustar para caber em 1 página (quando possível)</label>
+    <div id="fit1PaginaAviso" class="fit1-aviso">Não coube numa página só nem no tamanho mínimo legível — vai sair em mais de uma folha mesmo assim.</div>
 
     <button id="printBtn" type="button">🖨 Imprimir / salvar PDF</button>
     <p class="hint">A folha ao lado é o que será impresso. Nada aqui fica salvo — ao fechar a página, comece de novo para o próximo paciente.</p>
@@ -503,6 +510,34 @@ function render(){
   if(medicamentos.length === 0){
     out.innerHTML = '<div class="empty-msg">Adicione medicamentos no painel à esquerda para montar o cartão.</div>';
   }
+
+  ajustarParaCaberEmUmaPagina();
+}
+
+// "Ajustar para caber em 1 página" — encolhe a folha (zoom, afeta símbolo,
+// fonte, espaçamento e o cálculo de quebra de página igualmente) só o
+// necessário pra não estourar a A4. Nunca força abaixo do piso de legibilidade
+// (FATOR_MIN) — cartão pra paciente que não lê não pode virar cartão minúsculo
+// que ninguém enxerga; "quando possível" é literal: se não coube nem no piso,
+// avisa e deixa sair em mais de uma folha mesmo.
+const FIT1_FATOR_MIN = 0.55;
+function ajustarParaCaberEmUmaPagina(){
+  const sheet = document.getElementById('sheet');
+  const toggle = document.getElementById('fit1Pagina');
+  const aviso = document.getElementById('fit1PaginaAviso');
+  sheet.style.zoom = ''; // reseta antes de medir — senão mede o próprio zoom já aplicado
+  aviso.classList.remove('mostrar');
+  if(!toggle.checked || medicamentos.length === 0) return;
+
+  const pxPorMm = 96 / 25.4;
+  const alturaPaginaPx = 297 * pxPorMm;
+  const alturaAtual = sheet.scrollHeight;
+  if(alturaAtual <= alturaPaginaPx) return; // já cabe, nada a fazer
+
+  const fatorNecessario = alturaPaginaPx / alturaAtual;
+  const fator = Math.max(fatorNecessario, FIT1_FATOR_MIN);
+  sheet.style.zoom = fator;
+  if(fatorNecessario < FIT1_FATOR_MIN) aviso.classList.add('mostrar');
 }
 
 document.getElementById('addBtn').onclick = () => {
@@ -539,6 +574,7 @@ document.getElementById('addBtn').onclick = () => {
 };
 
 document.getElementById('modoCor').addEventListener('change', render);
+document.getElementById('fit1Pagina').addEventListener('change', ajustarParaCaberEmUmaPagina);
 document.getElementById('pacienteInput').addEventListener('input', e => {
   document.getElementById('pacienteOut').textContent = e.target.value.toUpperCase() || 'NOME DO PACIENTE';
 });
