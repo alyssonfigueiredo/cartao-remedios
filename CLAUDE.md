@@ -332,6 +332,27 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Domínio próprio: receitafacil.soaperando.com.br (2026-09-09, pendente do lado DNS)
+Usuário pediu esse domínio (subdomínio do soaperando.com.br, que já é do
+consultório). Feito o que dava pra fazer daqui: arquivo `CNAME` na raiz
+do repo com `receitafacil.soaperando.com.br` (é assim que o GitHub Pages
+sabe servir esse domínio em vez de só `alyssonfigueiredo.github.io/cartao-remedios/`).
+**Falta o lado DNS, fora do alcance desta sessão** (sem acesso à conta
+Cloudflare do soaperando) — passos que o usuário precisa fazer manualmente:
+1. Cloudflare → DNS do domínio `soaperando.com.br` → adicionar registro
+   CNAME: nome `receitafacil`, destino `alyssonfigueiredo.github.io`,
+   proxy **desligado** (DNS only/nuvem cinza) até o certificado do GitHub
+   ser emitido — proxy ligado antes disso costuma travar a validação.
+2. Esperar propagar (minutos a poucas horas).
+3. GitHub → repo `cartao-remedios` → Settings → Pages → em "Custom domain"
+   já deve aparecer `receitafacil.soaperando.com.br` (veio do `CNAME`
+   commitado) — aguardar o check de DNS ficar verde e marcar "Enforce
+   HTTPS" assim que disponível.
+4. Depois de confirmado, pode ligar o proxy do Cloudflare (nuvem laranja)
+   se quiser as proteções dele — não é obrigatório.
+URL antiga (`alyssonfigueiredo.github.io/cartao-remedios/`) continua
+funcionando em paralelo (GitHub Pages não desliga a URL padrão).
+
 ## Importar mais de uma receita/foto de uma vez (2026-09-09)
 `#receitaInput` ganhou `multiple` — usuário pode selecionar 2+ arquivos
 (ex.: 2 receitas separadas, ou várias fotos de embalagem) numa única
