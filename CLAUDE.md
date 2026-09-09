@@ -1,4 +1,13 @@
-# Cartão de Remédios — gerador visual para pacientes analfabetos
+# Receita Visual — cartão de remédios para pacientes analfabetos
+
+**Nome da ferramenta (2026-09-09): "Receita Visual".** Nome de arquivo/repo
+(`cartao-remedios`, `cartao_remedios_editavel.html`) não mudou — só o
+nome visível pro usuário (título da aba, cabeçalho do painel). Motivo:
+usuário achou "Gerador de cartão de remédios" pouco intuitivo; "Receita
+Visual" comunica direto o que é (uma receita em símbolos, não em texto)
+sem precisar explicar "cartão". O título do CARTÃO IMPRESSO em si
+("MEUS REMÉDIOS", editável pelo médico por paciente) não mudou — é rótulo
+do documento que o paciente recebe, não o nome da ferramenta.
 
 ## Contexto
 Ferramenta para médico da Estratégia de Saúde da Família (Agudos do Sul/PR)
