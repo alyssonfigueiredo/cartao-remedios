@@ -270,6 +270,34 @@ sai colorido mesmo em impressora P&B convertendo pra cinza sozinha; é
 decorativo (marca do consultório), não símbolo funcional do cartão — não
 compete com a regra "símbolo é o identificador primário".
 
+## Bug real corrigido: caixa de turno quebrando entre páginas (2026-09-09)
+Usuário reportou com PDF real: quando o conteúdo passava de 1 página (sem
+"ajustar para 1 página" ou mesmo com ela ligada, se excedesse o piso
+`FIT1_FATOR_MIN`), a caixa de turno (`.turno-box`) era cortada NO MEIO
+pela paginação de impressão — faixa colorida numa folha, símbolos na
+outra, borda arredondada "reabrindo" sozinha no topo da 2ª folha
+(`overflow:hidden` + `border-radius` fragmentados pelo motor de
+impressão). Fix em 2 partes, dentro de `@media print`:
+1. `.turno-box, .med-card{ break-inside:avoid; }` — cada caixa de turno e
+   cada cartão vira unidade atômica: se não coube no resto da página,
+   pula inteira, nunca corta no meio.
+2. Isso sozinho expôs um 2º bug: com `#sheet`/`#turnosOut` em
+   `display:flex; flex-direction:column`, quando uma caixa pulava inteira
+   pra página seguinte, o Chromium não recalculava a posição do `.foot`
+   (irmão seguinte no flex) pra nova página — o rodapé ficava sobreposto
+   por cima do último cartão. Fix: `#sheet, #turnosOut{ display:block; }`
+   só na impressão (a tela continua flex, pra esticar as caixas quando
+   sobra espaço com poucos remédios) — bloco simples pagina certo no
+   Chromium, flex/grid não. `.turno-box` continua flex por dentro (título
+   + grade), mas como já é atômica (não quebra) isso não afeta paginação.
+Validado com Playwright real (`page.pdf`) em 2 cenários: 6 remédios sem
+"ajustar p/ 1 página" (2 páginas, caixa noite inteira e correta na 2ª,
+rodapé sem sobrepor) e com a opção ligada (1 página só, tudo legível).
+Lição: ao adicionar `break-inside:avoid` num item de flex/grid container
+que pode precisar pular de página, testar também os IRMÃOS seguintes —
+o motor de impressão do Chromium não gosta de flex/grid atravessando
+quebra de página, mesmo com o item quebrado sendo atômico.
+
 ## Possíveis próximos passos (não pedidos ainda, só ideias em aberto)
 - Persistir múltiplos pacientes numa sessão (lista salva localmente).
 - Exportar/importar lista de medicamentos comuns (evitar redigitar Losartana

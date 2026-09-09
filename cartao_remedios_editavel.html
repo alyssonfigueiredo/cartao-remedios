@@ -222,6 +222,25 @@
        branco. Força o fundo a sair mesmo sem o usuário marcar "imprimir gráficos de
        fundo" nas opções da impressora. */
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+    /* Sem isso, quando o conteúdo não coube todo numa página (não marcou "ajustar
+       para 1 página", ou marcou e mesmo assim excedeu), o navegador corta a caixa
+       do turno NO MEIO — a faixa colorida fica numa folha, os símbolos na outra, e
+       a borda arredondada "reabre" sozinha no topo da 2ª folha, parecendo bloco
+       quebrado/duplicado. Cada bloco de turno e cada cartão de remédio vira uma
+       unidade atômica: se não couber no resto da página, pula inteiro pra próxima
+       — nunca corta no meio. */
+    .turno-box, .med-card{ break-inside:avoid; page-break-inside:avoid; }
+    /* flexbox (usado na tela pra esticar as caixas e preencher a folha mesmo com
+       poucos remédios) não pagina certo no Chromium: quando uma caixa pula
+       inteira pra próxima página, o rodapé (irmão seguinte no mesmo flex column)
+       continua sendo pintado na posição que teria SE a caixa não tivesse pulado
+       — sobrepondo o último cartão. Bug de paginação de impressão do próprio
+       motor com flex, não da regra acima (que só resolve não cortar a caixa no
+       meio). Na impressão, o container vira fluxo normal em bloco — cada caixa
+       de turno segue flex por dentro (título+grade), mas como bloco elas empilham
+       e o navegador pagina certinho; sem isso a régua "não cortar no meio"
+       resolve um bug e expõe outro. */
+    #sheet, #turnosOut{ display:block; }
   }
 </style>
 </head>
