@@ -155,6 +155,10 @@
 
   .turno-grid{display:flex; flex-wrap:wrap; gap:6mm; padding:7mm 6mm 9mm;}
   .med-card{width:40mm; text-align:center;}
+  .cor-caixa-box{
+    width:24mm; height:13mm; margin:0 auto 2mm; border:1.4pt dashed #999; border-radius:1.5mm;
+    display:flex; align-items:center; justify-content:center; font-size:7.5px; color:#999; line-height:1.25;
+  }
   .glyph-wrap{width:26mm; height:26mm; margin:0 auto 2mm; display:flex; align-items:center; justify-content:center;}
   .marcar-caixa{font-size:8px; color:#777; margin-bottom:2.5mm; line-height:1.3;}
   .contagem{display:flex; justify-content:center; gap:1.4mm; margin-bottom:2.5mm; flex-wrap:wrap;}
@@ -289,7 +293,7 @@
     <div class="head">
       <h2 contenteditable="true">MEUS REMÉDIOS</h2>
       <div class="paciente" contenteditable="true" id="pacienteOut">NOME DO PACIENTE</div>
-      <div class="obs" contenteditable="true">Peça para alguém desenhar, com caneta, o mesmo símbolo de cada remédio na caixa real</div>
+      <div class="obs" contenteditable="true">Peça para alguém desenhar, com caneta, o mesmo símbolo de cada remédio na caixa real. No quadrinho tracejado, pinte ou escreva a cor da caixa de verdade.</div>
     </div>
 
     <div id="turnosOut"></div>
@@ -442,6 +446,7 @@ function render(){
       <div class="turno-grid">
         ${itens.map(m => `
           <div class="med-card">
+            <div class="cor-caixa-box"><span>cor da<br>caixa</span></div>
             <div class="glyph-wrap">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>
             <div class="marcar-caixa">desenhe este símbolo<br>na caixa do remédio</div>
             <div class="contagem">${Array(Number(m.qtd)).fill('<span class="pip"></span>').join('')}</div>
@@ -504,8 +509,9 @@ document.getElementById('printBtn').onclick = () => window.print();
 /* ---------------- importar receita (foto/PDF -> texto -> candidatos) ---------------- */
 
 // linha com nome + dose reconhecível ("Losartana 50mg", "Amoxicilina 500 mg") marca o
-// INÍCIO de um novo medicamento; linhas seguintes (posologia) são anexadas até a próxima
-const RX_CABECALHO_MED = /^(.{2,50}?)\s+(\d+(?:[.,]\d+)?)\s*(mg|mcg|ug|g|ml|ui)\b/i;
+// INÍCIO de um novo medicamento; linhas seguintes (posologia) são anexadas até a próxima.
+// Prefixo de itemização de receituário (e-SUS: "Comprimido 1. ", "2. ") fica FORA do nome.
+const RX_CABECALHO_MED = /^(?:comprimido\s+)?(?:\d+\.\s*)?(.{2,50}?)\s+(\d+(?:[.,]\d+)?)\s*(mg|mcg|ug|g|ml|ui)\b/i;
 
 function extrairBlocosMedicamento(texto){
   const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -515,7 +521,9 @@ function extrairBlocosMedicamento(texto){
     const m = linha.match(RX_CABECALHO_MED);
     if(m){
       if(atual) blocos.push(atual);
-      atual = { nome: `${m[1]} ${m[2]}${m[3]}`.replace(/\s+/g,' ').trim(), texto: linha };
+      let nome = `${m[1]} ${m[2]}${m[3]}`.replace(/\s+/g,' ').trim();
+      nome = nome.replace(/^comprimido\s+/i, '').replace(/^\d+\.\s*/, '').trim();
+      atual = { nome, texto: linha };
     } else if(atual){
       atual.texto += ' ' + linha;
     }
@@ -524,8 +532,15 @@ function extrairBlocosMedicamento(texto){
   return blocos;
 }
 
+// Receituário costuma trazer DUAS contagens de comprimido no mesmo bloco: a quantidade
+// TOTAL dispensada ("60 comprimidos", plural, avulsa) e a quantidade POR TOMADA ("1
+// comprimido, a cada 12 horas", singular, colada à frequência) — priorizar a segunda,
+// senão todo remédio de uso contínuo vira "60 comprimidos por tomada".
 function detectarQtdPorTomada(texto){
-  const m = texto.match(/(\d+)\s*(comprimidos?|c[áa]psulas?|cp\b|dragea|drágea|gts|gotas|ml)/i);
+  let m = texto.match(/(\d+)\s*(comprimido|c[áa]psula|drage?a)\b(?!s)\s*,/i);
+  if(!m) m = texto.match(/(\d+)\s*(comprimido|c[áa]psula|drage?a)\b(?!s)/i);
+  if(!m) m = texto.match(/(\d+)\s*(gts|gotas|ml)\b/i);
+  if(!m) m = texto.match(/(\d+)\s*(comprimidos?|c[áa]psulas?|cp\b|drage?as?)/i);
   return m ? Math.max(1, Number(m[1])) : 1;
 }
 
@@ -537,6 +552,7 @@ function detectarTurnos(texto){
   let nx = null;
 
   let m = t.match(/(?:de\s*)?(\d{1,2})\s*(?:\/|em)\s*\1\s*h(?:oras)?/);
+  if(!m) m = t.match(/a cada\s*(\d{1,2})\s*h(?:oras)?/);
   if(m) nx = Math.max(1, Math.round(24 / Number(m[1])));
 
   m = t.match(/(\d)\s*[x×]\s*(?:ao dia|dia|\/dia)/);
@@ -615,6 +631,33 @@ function renderCandidatos(candidatos){
   });
 }
 
+// pdf.js devolve os itens de texto da página soltos (sem quebra de linha própria) —
+// juntar tudo com espaço colapsa a página inteira numa única "linha" e quebra o parser
+// por medicamento, que depende de 1 linha = 1 dado. Reconstrói quebras por `hasEOL`
+// (quando o pdf.js sabe) e, de reforço, por salto de posição vertical (Y) do item.
+function reconstruirLinhasPdf(items){
+  let texto = '';
+  let linha = '';
+  let yAtual = null;
+  items.forEach(it => {
+    const y = it.transform ? it.transform[5] : null;
+    const novaLinha = yAtual !== null && y !== null && Math.abs(y - yAtual) > 1.5;
+    if(novaLinha && linha.trim()){
+      texto += linha.trim() + '\n';
+      linha = '';
+    }
+    linha += it.str + ' ';
+    yAtual = y;
+    if(it.hasEOL){
+      texto += linha.trim() + '\n';
+      linha = '';
+      yAtual = null;
+    }
+  });
+  if(linha.trim()) texto += linha.trim() + '\n';
+  return texto;
+}
+
 async function extrairTextoArquivo(file, statusEl){
   if(file.type === 'application/pdf'){
     statusEl.textContent = 'Lendo PDF...';
@@ -624,7 +667,7 @@ async function extrairTextoArquivo(file, statusEl){
     for(let i = 1; i <= pdf.numPages; i++){
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      texto += content.items.map(it => it.str).join(' ') + '\n';
+      texto += reconstruirLinhasPdf(content.items) + '\n';
     }
     if(texto.trim().length < 15){
       // sem camada de texto (PDF escaneado) -> OCR página a página

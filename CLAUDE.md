@@ -81,6 +81,42 @@ medicamento. Fluxo:
    errado nesse cartão é diretamente perigoso (o paciente não lê pra
    conferir).
 
+**Bug real corrigido (2026-09-09) — importação não gerava nada com PDF do e-SUS.**
+Testado com receituário real (e-SUS, 4 medicamentos, "Atenolol 50mg 12/12h",
+"Espironolactona 25mg 1x/dia", "Hidroclorotiazida 25mg pela manhã", "Losartana
+50mg 12/12h"). Duas causas, as duas na extração/parsing — não no OCR:
+1. `extrairTextoArquivo` juntava `content.items.map(it=>it.str).join(' ')` —
+   o PDF.js devolve os itens de texto da página SOLTOS, sem quebra de linha
+   própria; juntar tudo com espaço colapsava a página inteira numa única
+   "linha", e `extrairBlocosMedicamento` (que assume 1 linha = 1 dado) nunca
+   encontrava separação nenhuma → zero candidatos. Fix: `reconstruirLinhasPdf`
+   quebra por `item.hasEOL` (quando o PDF.js sabe) e, de reforço, por salto
+   de posição vertical (`transform[5]`) entre itens.
+2. `detectarTurnos` não reconhecia "a cada 12 horas" (só "12/12h" e "de 12 em
+   12 horas") — frequência real mais comum de receituário de e-SUS/PEC.
+   Emenda: `a cada\s*(\d{1,2})\s*h(?:oras)?` antes do fallback de manhã-só.
+Efeito colateral também corrigido: `RX_CABECALHO_MED` capturava o prefixo de
+itemização do e-SUS ("Comprimido 1. Atenolol 50mg" em vez de "Atenolol
+50mg") — limpo com strip de `^comprimido\s+` e `^\d+\.\s*` no nome. E
+`detectarQtdPorTomada` podia confundir a quantidade TOTAL dispensada ("60
+comprimidos", plural, avulsa) com a quantidade POR TOMADA ("1 comprimido,"
+singular, colada à frequência) — agora prioriza singular+vírgula antes de
+cair no fallback plural.
+Sem suíte de teste no projeto ainda; validação foi manual, reconstruindo o
+texto linha-a-linha esperado da receita real e rodando `parseReceita` num
+script Node descartável (`node -e "..."` fatiando o HTML pelos marcadores
+`const RX_CABECALHO_MED` / `function adicionarMedicamentoDaLista`) — receita
+com os 4 medicamentos bateu turno-a-turno e qtd-a-qtd contra o resultado
+esperado antes de aplicar o fix no arquivo real.
+
+**Quadrinho "cor da caixa" (2026-09-09).** Adicionado ao `.med-card`, ACIMA
+do símbolo geométrico — dashed box em branco onde o cuidador pinta ou
+escreve a cor real da caixa do remédio (ideia validada com o usuário a
+partir de um mockup). Não inverte a prioridade símbolo-primeiro/cor-bônus
+da seção "Restrições de design" acima: funciona igual sem impressora
+colorida (é só um espaço pro cuidador desenhar/escrever à mão), o símbolo
+continua sendo o código que o app garante ser único por medicamento.
+
 **Limitações conhecidas / não resolvidas ainda:**
 - `detectarTurnos` cobre só 3 turnos (manhã/tarde/noite); frequência >3x/dia
   (ex.: 6/6h = 4x) marca os 3 turnos existentes e liga `alertaExtra` (aviso
@@ -91,6 +127,11 @@ medicamento. Fluxo:
   dose em campos/linhas separados (formulário estruturado de algum PEC) não
   bate e o bloco não é detectado; nesses casos o candidato não aparece e o
   médico usa o form manual normal.
+- `reconstruirLinhasPdf` é heurística (hasEOL + salto de Y) — não testada
+  contra outros formatos de receituário além do e-SUS (o PEC municipal
+  citado no soaperando). PDF de outra origem pode segmentar linha diferente;
+  se vier errado, o texto bruto editável em `#receitaTexto` é a rede de
+  segurança (corrigir manualmente e clicar "Reprocessar").
 - Sem teste automatizado ainda (projeto não tem suíte) — validar heurística
   de `detectarTurnos`/`extrairBlocosMedicamento` contra receitas reais
   antes de confiar em uso clínico sem revisão atenta do texto bruto.
