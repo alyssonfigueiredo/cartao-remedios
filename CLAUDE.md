@@ -364,21 +364,27 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
-## Bolinha de contagem virou traço grosso (2026-09-09)
-Usuário achou que a bolinha (`.pip`, redonda) ainda podia confundir o
-paciente — parecida demais com "mais um símbolo geométrico" ao lado do
-círculo/quadrado/triângulo do remédio. Mock comparando 4 alternativas
+## Contagem: bolinha → traço → repetir a própria forma (2026-09-09, 3 rodadas)
+Linha do tempo da mesma tarde: (1) bolinha (`.pip`, redonda) — usuário
+achou que parecia "mais um símbolo geométrico" ao lado do círculo/
+quadrado/triângulo do remédio; (2) testado com mock de 4 alternativas
 (traço vertical, tally de 5 com diagonal, tirinha de blister, risco
-horizontal) mostrado lado a lado com os símbolos reais antes de decidir —
-o tally só se justificaria se o teto de "vira numeral acima de 5" um dia
-mudasse, e o blister competia visualmente com o quadrado/círculo do
-remédio (borda dentro de borda). Vencedor: **traço grosso vertical**, sem
-elemento novo (só a marca, sem contorno ao redor). `.contagem .pip` foi de
-`width:3.8mm; height:3.8mm; border-radius:50%` (bolinha) pra
-`width:3mm; height:11mm; border-radius:1mm` (traço), com `gap` de 1.6mm
-pra 2.4mm (mais espaçado, pedido explícito). Nome da classe CSS/JS
-(`pip`) não mudou — só a aparência; `renderContagem()` não precisou de
-nenhuma alteração.
+horizontal) contra os símbolos reais — traço grosso vertical venceu por
+não introduzir contorno novo, aplicado (`.contagem .pip` virou
+`width:3mm; height:11mm; border-radius:1mm`); (3) usuário reconsiderou:
+"até 5, o ideal é repetir as formas, ainda que diminuam de tamanho pra
+caber" — **decisão final**. Em vez de qualquer marca genérica (bolinha OU
+traço), até `CONTAGEM_MAX_FORMAS` (5) a contagem repete a PRÓPRIA forma do
+remédio (mesmo `shapeIdx`/`patternIdx`/`cor`, só menor) — ver 3 triângulos
+pequenos comunica "3 desse remédio" mais direto que 3 marcas sem ligação
+nenhuma com o símbolo. `renderContagem(m, usaCor)` ganhou o parâmetro
+`usaCor` (precisa pra chamar `svgGlyph` de novo com a cor certa) — único
+call site (`render()`) atualizado junto. `CONTAGEM_TAMANHO_MM` (mapa
+1→12mm … 5→7mm) encolhe a forma conforme a quantidade aumenta, pra 5
+repetições ainda caberem nos ~44mm úteis do cartão horizontal. Acima de 5
+OU pra líquido (gotas/ml) continua virando numeral grande + rótulo — isso
+não mudou nas 3 rodadas, só a representação de 1-5 mudou. `.pip`
+(CSS) morreu de vez — nenhum HTML gerado usa mais essa classe.
 
 ## 4 bugs reais achados testando com receitas reais no navegador (2026-09-09)
 Usuário pediu pra testar com PDF real dele antes de confiar na extração —

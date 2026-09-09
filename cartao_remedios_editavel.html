@@ -235,15 +235,16 @@
     filter:blur(2px);
   }
   .cor-caixa-box span{position:relative;}
-  /* Traços grossos em vez de bolinha (pedido 2026-09-09) — mais rápido de
-     contar de relance e não parece "mais um símbolo geométrico" ao lado
-     do círculo/quadrado/triângulo do remédio (avaliado com mock lado a
-     lado antes de aplicar). */
-  .contagem{display:flex; justify-content:center; gap:2.4mm; margin-bottom:2.5mm; flex-wrap:wrap;}
-  .contagem .pip{width:3mm; height:11mm; background:#000; border-radius:1mm; display:inline-block;}
-  /* substitui as bolinhas quando não faz sentido desenhar 1 por unidade —
+  /* Contagem até 5 repete a própria forma do remédio, encolhida (pedido
+     2026-09-09, depois de passar por bolinha e por traço) — ver "3
+     triângulos pequenos" comunica "3 desse remédio" mais direto do que
+     uma marca sem ligação nenhuma com o símbolo. */
+  .contagem{display:flex; justify-content:center; align-items:center; gap:1.4mm; margin-bottom:2.5mm; flex-wrap:wrap;}
+  .contagem-formas .forma-mini{display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .contagem-formas .forma-mini svg{width:100%; height:100%; display:block;}
+  /* substitui as formas quando não faz sentido repetir 1 por unidade —
      líquido (gotas/ml) ou quantidade de comprimido grande demais pra
-     contar de relance (ver CONTAGEM_MAX_BOLINHAS). */
+     contar de relance (ver CONTAGEM_MAX_FORMAS). */
   .contagem-numero{margin-bottom:2.5mm; line-height:1;}
   .contagem-numero .num{font-size:19px; font-weight:800; color:var(--ink); font-family:var(--font-sans);}
   .contagem-numero .rotulo{display:block; font-size:8.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:.5mm;}
@@ -557,24 +558,33 @@ SHAPES.forEach((s,i) => {
   formaSelect.appendChild(opt);
 });
 
-// Bolinha por unidade só funciona pra comprimido/cápsula em quantidade
-// pequena — "35 gotas" desenhado como 35 bolinhas lê como "35 comprimidos"
-// (risco de dose) e mesmo pra comprimido de verdade, mais de 5 bolinhas
-// vira ruído visual em vez de contagem rápida. Acima de 5, OU pra qualquer
-// unidade líquida, vira numeral grande + rótulo da unidade (pedido
-// 2026-09-09, depois de achar o caso real de Paracetamol em gotas).
-const CONTAGEM_MAX_BOLINHAS = 5;
-function renderContagem(m){
+// Contagem até 5 REPETE a própria forma do remédio (encolhida pra caber)
+// em vez de uma marca genérica (bolinha/traço) — pedido 2026-09-09: ver 3
+// triângulos pequenos comunica "3 desse remédio" mais direto do que 3
+// traços que não têm ligação nenhuma com o símbolo do medicamento. "35
+// gotas" desenhado como 35 formas pequenas continua sem sentido nenhum
+// (risco de dose — lido como 35 comprimidos), e mesmo pra comprimido,
+// mais de 5 formas vira ruído visual em vez de contagem rápida — os dois
+// casos seguem virando numeral grande + rótulo da unidade.
+const CONTAGEM_MAX_FORMAS = 5;
+// mm de cada forma repetida, por quantidade — encolhe conforme aumenta pra
+// não estourar a largura do cartão (~44mm úteis com o layout horizontal).
+const CONTAGEM_TAMANHO_MM = {1:12, 2:11, 3:10, 4:8.5, 5:7};
+function renderContagem(m, usaCor){
   const qtd = Number(m.qtd);
   const unidade = m.unidade || 'comprimido';
   if(unidade !== 'comprimido'){
     const rotulo = unidade === 'gotas' ? `gota${qtd>1?'s':''}` : 'ml';
     return `<div class="contagem-numero"><span class="num">${qtd}</span><span class="rotulo">${rotulo}</span></div>`;
   }
-  if(qtd > CONTAGEM_MAX_BOLINHAS){
+  if(qtd > CONTAGEM_MAX_FORMAS){
     return `<div class="contagem-numero"><span class="num">${qtd}</span><span class="rotulo">comprimido${qtd>1?'s':''}</span></div>`;
   }
-  return `<div class="contagem">${Array(qtd).fill('<span class="pip"></span>').join('')}</div>`;
+  const tamanho = CONTAGEM_TAMANHO_MM[qtd] || CONTAGEM_TAMANHO_MM[CONTAGEM_MAX_FORMAS];
+  const formas = Array(qtd).fill(0).map(() =>
+    `<span class="forma-mini" style="width:${tamanho}mm;height:${tamanho}mm">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 100)}</span>`
+  ).join('');
+  return `<div class="contagem contagem-formas">${formas}</div>`;
 }
 
 function render(){
@@ -625,7 +635,7 @@ function render(){
               <div class="cor-caixa-box"><span>cor da<br>caixa</span></div>
               <div class="glyph-wrap">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>
             </div>
-            ${renderContagem(m)}
+            ${renderContagem(m, usaCor)}
             <div class="med-name">${m.nome}</div>
             ${m.dose ? `<div class="med-dose">${m.dose}</div>` : ''}
           </div>
