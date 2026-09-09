@@ -44,13 +44,15 @@ outro antes de commitar** — não há build/symlink automatizando isso.
 - **Economia de toner (2026-09-09).** `PATTERNS` reordenado pra `contorno`
   vir primeiro — o 1º ciclo de até 8 remédios (o caso comum) imprime só o
   contorno da forma, não preenchida de preto sólido; `solido` foi pro fim
-  da lista, só usado se os símbolos ciclarem (>8 remédios distintos). A
-  faixa preta inteira da noite virou um emblema circular escuro
-  (`.turno-icon-wrap.turno-icon-noite`) só atrás do ícone da lua — mesmo
-  contraste que resolve o bug abaixo, muito menos tinta que pintar a
-  faixa toda. E "À TARDE" ganhou ícone próprio (antes reusava o sol da
-  manhã): xícara de chá com fumacinha, em contorno — `svgTurno(turno,...)`
-  tem 3 ramos agora (`noite`/`tarde`/manhã-padrão).
+  da lista, só usado se os símbolos ciclarem (>8 remédios distintos). Essa
+  parte vale pros SÍMBOLOS dos remédios. **A faixa da noite, por pedido
+  explícito do usuário, voltou a ser preenchida sólida** (`var(--ink)`,
+  texto branco) — tentei um meio-termo (emblema circular escuro só atrás
+  da lua, bem mais barato em tinta) mas o usuário preferiu a faixa cheia
+  de antes; não reintroduzir o emblema sem pedido novo. "À TARDE" ganhou
+  ícone próprio (antes reusava o sol da manhã): xícara de chá com
+  fumacinha, em contorno — `svgTurno(turno,...)` tem 3 ramos
+  (`noite`/`tarde`/manhã-padrão).
 - **Bug real corrigido (2026-09-09): a lua não aparecia na impressão P&B.**
   Navegador OMITE `background-color` na impressão por padrão (economia de
   tinta) a menos que o usuário marque manualmente "imprimir gráficos de

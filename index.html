@@ -153,15 +153,13 @@
   .turno-box:last-child{margin-bottom:0;}
   .turno-band{display:flex; align-items:center; justify-content:space-between; padding:6mm 8mm;}
   .turno-band.turno-manha, .turno-band.turno-tarde{background:#fdf6e3;}
-  .turno-band.turno-noite{background:#eef1f5;}
+  .turno-band.turno-noite{background:var(--ink);}
   .turno-band .left{display:flex; align-items:center; gap:5mm;}
   .turno-icon-wrap{width:19mm; height:19mm; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
-  /* Emblema escuro só atrás do ícone da noite (não a faixa inteira) — dá o
-     mesmo contraste pra lua branca aparecer, gastando bem menos toner que
-     pintar a faixa toda de preto. */
-  .turno-icon-wrap.turno-icon-noite{border-radius:50%; background:var(--ink); padding:2mm; box-sizing:border-box;}
   .turno-band .titulo{font-size:23px; font-weight:800; font-family:var(--font-sans); color:var(--ink); letter-spacing:.02em;}
+  .turno-band.turno-noite .titulo{color:#fff;}
   .turno-band .total{font-size:15px; font-weight:700; color:var(--muted);}
+  .turno-band.turno-noite .total{color:#cfd8db;}
 
   .turno-grid{display:flex; flex-wrap:wrap; gap:9mm; padding:9mm 8mm; justify-content:center; align-content:center; flex:1;}
   .med-card{width:48mm; text-align:center;}
@@ -484,7 +482,7 @@ function render(){
     box.className = 'turno-box';
     box.innerHTML = `
       <div class="turno-band turno-${turno}">
-        <div class="left"><span class="turno-icon-wrap${turno === 'noite' ? ' turno-icon-noite' : ''}">${svgTurno(turno, '#e8a316', usaCor)}</span><span class="titulo">${meta.titulo}</span></div>
+        <div class="left"><span class="turno-icon-wrap">${svgTurno(turno, '#e8a316', usaCor)}</span><span class="titulo">${meta.titulo}</span></div>
         <span class="total">${total} comprimido${total>1?'s':''}</span>
       </div>
       <div class="turno-grid">
