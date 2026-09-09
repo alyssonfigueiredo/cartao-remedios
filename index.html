@@ -165,8 +165,19 @@
   .turno-icon-wrap{width:19mm; height:19mm; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
   .turno-band .titulo{font-size:23px; font-weight:800; font-family:var(--font-sans); color:var(--ink); letter-spacing:.02em;}
   .turno-band.turno-noite .titulo{color:#fff;}
-  .turno-band .total{font-size:15px; font-weight:700; color:var(--muted);}
-  .turno-band.turno-noite .total{color:#cfd8db;}
+  /* total de comprimidos: mesmo peso visual do título do turno (pedido do
+     usuário) — não é detalhe secundário, é a 2ª informação mais importante
+     do bloco pro paciente ("quantos eu tomo agora"). */
+  .total-badge{text-align:right; line-height:1;}
+  .total-badge .total-num{font-size:23px; font-weight:800; font-family:var(--font-sans); color:var(--ink);}
+  .total-badge .total-label{display:block; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:.5mm;}
+  .turno-band.turno-noite .total-badge .total-num{color:#fff;}
+  .turno-band.turno-noite .total-badge .total-label{color:#cfd8db;}
+
+  /* fileira-resumo dos símbolos daquele turno, sem texto — um "de relance"
+     antes de descer aos cartões individuais com nome + cor. */
+  .turno-legenda{display:flex; justify-content:center; align-items:center; gap:4mm; flex-wrap:wrap; padding:4mm 8mm 0;}
+  .turno-legenda .glyph-mini{width:11mm; height:11mm; flex-shrink:0;}
 
   .turno-grid{display:flex; flex-wrap:wrap; gap:9mm; padding:9mm 8mm; justify-content:center; align-content:center; flex:1;}
   .med-card{width:48mm; text-align:center;}
@@ -174,11 +185,10 @@
     width:30mm; height:16mm; margin:0 auto 2.5mm; border:1.6pt dashed #999; border-radius:2mm;
     display:flex; align-items:center; justify-content:center; font-size:8.5px; color:#999; line-height:1.3;
   }
-  .glyph-wrap{width:34mm; height:34mm; margin:0 auto 2.5mm; display:flex; align-items:center; justify-content:center;}
-  .marcar-caixa{font-size:9.5px; color:#777; margin-bottom:3mm; line-height:1.35;}
+  .glyph-wrap{width:34mm; height:34mm; margin:0 auto 3mm; display:flex; align-items:center; justify-content:center;}
   .contagem{display:flex; justify-content:center; gap:1.8mm; margin-bottom:3mm; flex-wrap:wrap;}
   .contagem .pip{width:4.2mm; height:4.2mm; border-radius:50%; background:#000; display:inline-block;}
-  .med-name{font-size:14px; font-weight:800; line-height:1.25; color:var(--ink); font-family:var(--font-sans);}
+  .med-name{font-size:14px; font-weight:800; line-height:1.25; color:var(--ink); font-family:var(--font-sans); text-transform:uppercase;}
   .med-dose{font-size:10.5px; color:var(--muted); margin-top:1.2mm;}
 
   .foot{text-align:center; font-size:9px; color:var(--muted); margin-top:4mm;}
@@ -512,14 +522,16 @@ function render(){
     box.innerHTML = `
       <div class="turno-band turno-${turno}">
         <div class="left"><span class="turno-icon-wrap">${svgTurno(turno, '#e8a316', usaCor)}</span><span class="titulo">${meta.titulo}</span></div>
-        <span class="total">${total} comprimido${total>1?'s':''}</span>
+        <div class="total-badge"><span class="total-num">${total}</span><span class="total-label">comprimido${total>1?'s':''}</span></div>
+      </div>
+      <div class="turno-legenda">
+        ${itens.map(m => `<span class="glyph-mini">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 40)}</span>`).join('')}
       </div>
       <div class="turno-grid">
         ${itens.map(m => `
           <div class="med-card">
             <div class="cor-caixa-box"><span>cor da<br>caixa</span></div>
             <div class="glyph-wrap">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>
-            <div class="marcar-caixa">desenhe na caixa</div>
             <div class="contagem">${Array(Number(m.qtd)).fill('<span class="pip"></span>').join('')}</div>
             <div class="med-name">${m.nome}</div>
             ${m.dose ? `<div class="med-dose">${m.dose}</div>` : ''}

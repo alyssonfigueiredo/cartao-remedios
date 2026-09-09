@@ -298,6 +298,34 @@ que pode precisar pular de página, testar também os IRMÃOS seguintes —
 o motor de impressão do Chromium não gosta de flex/grid atravessando
 quebra de página, mesmo com o item quebrado sendo atômico.
 
+## Despoluir o cartão — instrução é pro paciente, não pra quem preenche (2026-09-09)
+Usuário notou que boa parte do texto repetido em cada cartão de remédio
+("desenhe na caixa") era instrução de PREENCHIMENTO (pra quem desenha o
+símbolo/marca a cor, uma vez, com o cartão em mãos) — não informação que
+o PACIENTE (analfabeto, é quem de fato lê/usa o cartão pronto) precisa
+carregar consigo. A explicação de como preencher já existe uma vez só no
+topo da folha (`.obs`); repetir por cartão era ruído.
+- **Removido**: `.marcar-caixa` ("desenhe na caixa") de cada cartão —
+  virou div morta, removida do JS (`render()`) e do CSS.
+- **Nome do remédio em CAIXA ALTA** (`text-transform:uppercase` em
+  `.med-name`) — mais fácil de reconhecer por quem já teve alguma noção
+  de letras/embalagens (nome impresso na caixa geralmente também é
+  maiúsculo), sem precisar mudar como o médico digita.
+- **Total de comprimidos do turno com o MESMO peso visual do título**
+  (`DE MANHÃ`/`À NOITE`) — antes era texto pequeno cinza (`.total`,
+  15px/700), virou `.total-badge` com o número grande (23px/800, igual
+  `.titulo`) e "COMPRIMIDOS" pequeno/maiúsculo embaixo como rótulo de
+  unidade. É a 2ª informação mais importante do bloco pro paciente
+  ("quantos eu tomo agora"), não deveria estar sub-hierarquizada.
+- **Fileira-legenda de símbolos** (`.turno-legenda`) entre a faixa do
+  turno e a grade de cartões: miniaturas (11mm) dos símbolos daquele
+  turno, sem texto — resumo visual de relance antes de descer aos
+  cartões com nome+cor. `svgGlyph(...)` é chamado 2x por remédio agora
+  (legenda mini + cartão grande); cada chamada já gera `uid` aleatório
+  próprio pro `<pattern>` SVG, sem colisão entre as duas.
+Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
+hierarquia visual antes de fechar, não só o HTML gerado.
+
 ## Possíveis próximos passos (não pedidos ainda, só ideias em aberto)
 - Persistir múltiplos pacientes numa sessão (lista salva localmente).
 - Exportar/importar lista de medicamentos comuns (evitar redigitar Losartana
