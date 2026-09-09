@@ -248,8 +248,10 @@ continua sendo o código que o app garante ser único por medicamento.
   referência aqui).
 
 ## Logo (2026-09-09)
-`logo.png` (256×256, mesmo arquivo do soaperando — decisão do usuário: é a
-mesma marca do consultório, reaproveitar em vez de criar ícone novo) vive
+`logo.png` (256×256, redimensionado de `assets/logo-heart-crop-hires.png`
+do soaperando — é o mesmo PNG usado no `.logo-sq` do cabeçalho do site
+soaperando.com.br, não o favicon `logo.png` dele, que tem crop/gradiente
+diferente; decisão do usuário: usar exatamente o que aparece no site) vive
 na raiz, ao lado de `cartao_remedios_editavel.html`/`index.html`. Dois
 lugares: `#controls .brand-row` (painel de edição, 34px ao lado do título,
 não imprime) e `.head .brand-mark` (canto superior esquerdo do cabeçalho
