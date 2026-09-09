@@ -364,6 +364,73 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## 4 bugs reais achados testando com receitas reais no navegador (2026-09-09)
+Usuário pediu pra testar com PDF real dele antes de confiar na extração —
+pedido certeiro: 3 dos 4 bugs abaixo só existem com dado real (e-SUS de
+Curitiba), nenhum sintético teria achado. Método: `npm install
+pdfjs-dist@3.11.174` local (o CDN jsdelivr é bloqueado no proxy desta
+sessão) servido junto de uma cópia do `index.html` com as 2 tags
+`<script src=cdn...>` do pdf.js trocadas pra apontar pro arquivo local —
+só pra rodar o teste; a extração roda IDÊNTICA (mesmo pdf.js, mesma
+versão), só a origem do arquivo muda. Testado com 5 receitas reais
+(Andressa, Carolina, Célia — cada uma com atestado + receituário de
+verdade, incluindo criança em uso de líquidos).
+
+1. **Nome do paciente nunca era extraído.** O e-SUS de Curitiba rotula
+   `Usuário:`, não `Paciente:`/`Nome do paciente:` (só cogitados por mim,
+   nunca confirmados contra dado real). `extrairNomePaciente` ganhou
+   `usuário:` como padrão FORTE (1º da lista) — os outros ficam de
+   fallback pra outros municípios/sistemas. Achado adicional: o pdf.js
+   cola a coluna "Idade" direto depois do nome na mesma linha reconstruída
+   (`"Usuário: CELIA PEREIRA DIAS 64"`) — `limpar()` ganhou
+   `.replace(/\s+\d+\s*$/, '')` pra cortar esse número solto no fim, que
+   nome nenhum tem de verdade.
+2. **"Quantidade:" grudava no início do nome do remédio**
+   (`"Quantidade: PARACETAMOL 500 MG COMPRIMIDO"`). A tabela da receita
+   tem "Quantidade" numa coluna separada, mas o pdf.js reconstrói a linha
+   por proximidade vertical (Y) e cola o rótulo antes do nome na mesma
+   linha. Fix em `extrairBlocosMedicamento`: strip de um rótulo solto
+   `palavra:` no início do nome capturado, antes dos strips que já
+   existiam (`comprimido `, numeração).
+3. **Linha de posologia virava medicamento fantasma.** `"DAR 10 ML, 1X AO
+   DIA..."` bate no mesmo padrão "nome + número + unidade" que um
+   cabeçalho de remédio de verdade — sem guarda, cada posologia de líquido
+   criava um "remédio" a mais (achado com receituário pediátrico real: 3
+   remédios reais + 2 fantasmas `"DAR 10ML"`/`"TOMAR 5ML"`).
+   `RX_CABECALHO_MED` ganhou lookahead negativo pra linha que COMEÇA com
+   verbo de administração (dar/tomar/aplicar/usar/administrar/ingerir/
+   pingar/instilar/inalar).
+4. **Líquido (gotas/ml) virava bolinha de comprimido — risco de dose.**
+   Receita real: "PARACETAMOL 200MG/ML GOTAS — DAR 35 GOTAS de 8/8h". O
+   app desenhava 35 bolinhas pretas, idênticas às de contagem de
+   comprimido — um cuidador podia ler "35 comprimidos". E mais: a
+   abreviação **"CP"** de comprimido (rotina em posologia real — "TOMAR 01
+   CP DE 6/6H") não tinha prioridade sobre a quantidade TOTAL dispensada
+   ("Quantidade: ... 10 comprimido(s)"), então "1 comprimido de 6/6h"
+   saía como "10 COMPRIMIDOS" no cartão — dose errada por um fator de 10,
+   achado nas receitas reais da Célia e da Carolina (ambas usam "CP").
+   Duas mudanças: (a) `detectarQtdPorTomada` devolve `{qtd, unidade}` e
+   tenta primeiro `verbo(tomar|dar|aplicar|usar|ingerir|pingar) + número +
+   unidade` (a posologia de verdade), só caindo no padrão solto antigo
+   (que pega o que aparecer primeiro no texto, geralmente o total) se
+   nenhuma posologia com verbo for achada; (b) `renderContagem(m)` — nova
+   função central que decide bolinha vs. numeral: unidade "gotas"/"ml"
+   NUNCA vira bolinha (sempre numeral grande + rótulo da unidade,
+   `CONTAGEM_MAX_BOLINHAS` não se aplica), e comprimido acima de 5 vira
+   numeral também (bolinha só serve pra contagem de relance, não pra
+   substituir número escrito). O total do CABEÇALHO do turno
+   (`totalComprimidos`) também parou de somar unidade líquida junto —
+   soma só itens `unidade==='comprimido'`, e o badge inteiro (divisor +
+   número) some quando não sobra nenhum comprimido de verdade naquele
+   turno, em vez de mostrar "0 COMPRIMIDOS" ou misturar unidades.
+   Medicamento adicionado à mão pelo formulário sempre tem
+   `unidade:'comprimido'` (o campo do form já se chama "Comprimidos por
+   tomada", sem ambiguidade).
+Validado com Playwright real (Chromium + pdf.js real) nas 3 receitas reais
+— PDF final de cada uma conferido visualmente (screenshot) e como PDF de
+impressão de verdade, sem quebra de página, sem medicamento fantasma, sem
+dose inflada, sem bolinha de líquido.
+
 ## Bug real corrigido: "ajustar para 1 página" tinha pontos cegos de recálculo (2026-09-09)
 Usuário reportou PDF real quebrando em 2 páginas com uma receita de 4
 remédios de manhã + 2 à noite — geometricamente cabia numa página (2 boxes

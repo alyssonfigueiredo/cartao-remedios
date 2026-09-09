@@ -237,6 +237,12 @@
   .cor-caixa-box span{position:relative;}
   .contagem{display:flex; justify-content:center; gap:1.6mm; margin-bottom:2.5mm; flex-wrap:wrap;}
   .contagem .pip{width:3.8mm; height:3.8mm; border-radius:50%; background:#000; display:inline-block;}
+  /* substitui as bolinhas quando não faz sentido desenhar 1 por unidade —
+     líquido (gotas/ml) ou quantidade de comprimido grande demais pra
+     contar de relance (ver CONTAGEM_MAX_BOLINHAS). */
+  .contagem-numero{margin-bottom:2.5mm; line-height:1;}
+  .contagem-numero .num{font-size:19px; font-weight:800; color:var(--ink); font-family:var(--font-sans);}
+  .contagem-numero .rotulo{display:block; font-size:8.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:.5mm;}
   .med-name{font-size:13px; font-weight:800; line-height:1.2; color:var(--ink); font-family:var(--font-sans); text-transform:uppercase;}
   .med-dose{font-size:10px; color:var(--muted); margin-top:1mm;}
 
@@ -547,6 +553,26 @@ SHAPES.forEach((s,i) => {
   formaSelect.appendChild(opt);
 });
 
+// Bolinha por unidade só funciona pra comprimido/cápsula em quantidade
+// pequena — "35 gotas" desenhado como 35 bolinhas lê como "35 comprimidos"
+// (risco de dose) e mesmo pra comprimido de verdade, mais de 5 bolinhas
+// vira ruído visual em vez de contagem rápida. Acima de 5, OU pra qualquer
+// unidade líquida, vira numeral grande + rótulo da unidade (pedido
+// 2026-09-09, depois de achar o caso real de Paracetamol em gotas).
+const CONTAGEM_MAX_BOLINHAS = 5;
+function renderContagem(m){
+  const qtd = Number(m.qtd);
+  const unidade = m.unidade || 'comprimido';
+  if(unidade !== 'comprimido'){
+    const rotulo = unidade === 'gotas' ? `gota${qtd>1?'s':''}` : 'ml';
+    return `<div class="contagem-numero"><span class="num">${qtd}</span><span class="rotulo">${rotulo}</span></div>`;
+  }
+  if(qtd > CONTAGEM_MAX_BOLINHAS){
+    return `<div class="contagem-numero"><span class="num">${qtd}</span><span class="rotulo">comprimido${qtd>1?'s':''}</span></div>`;
+  }
+  return `<div class="contagem">${Array(qtd).fill('<span class="pip"></span>').join('')}</div>`;
+}
+
 function render(){
   const usaCor = document.getElementById('modoCor').checked;
 
@@ -571,15 +597,22 @@ function render(){
     const itens = medicamentos.filter(m => m.turnos.includes(turno));
     if(itens.length === 0) return;
     const meta = TURNO_META[turno];
-    const total = itens.reduce((s,m)=>s+Number(m.qtd),0);
+    // Total do cabeçalho conta só COMPRIMIDO/cápsula/drágea — somar gotas/ml
+    // junto era o mesmo bug de origem (mistura de unidade), só que agregado:
+    // "38 COMPRIMIDOS" quando 35 daqueles eram gotas de um xarope.
+    const totalComprimidos = itens
+      .filter(m => (m.unidade || 'comprimido') === 'comprimido')
+      .reduce((s,m) => s + Number(m.qtd), 0);
 
     const box = document.createElement('div');
     box.className = 'turno-box';
     box.innerHTML = `
       <div class="turno-band turno-${turno}">
         <div class="left"><span class="turno-icon-wrap">${svgTurno(turno, '#e8a316', usaCor)}</span><span class="titulo">${meta.titulo}</span></div>
-        <div class="turno-divisor"></div>
-        <div class="total-badge"><span class="total-num">${total}</span><span class="total-label">comprimido${total>1?'s':''}</span></div>
+        ${totalComprimidos > 0 ? `
+          <div class="turno-divisor"></div>
+          <div class="total-badge"><span class="total-num">${totalComprimidos}</span><span class="total-label">comprimido${totalComprimidos>1?'s':''}</span></div>
+        ` : ''}
       </div>
       <div class="turno-grid">
         ${itens.map(m => `
@@ -588,7 +621,7 @@ function render(){
               <div class="cor-caixa-box"><span>cor da<br>caixa</span></div>
               <div class="glyph-wrap">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>
             </div>
-            <div class="contagem">${Array(Number(m.qtd)).fill('<span class="pip"></span>').join('')}</div>
+            ${renderContagem(m)}
             <div class="med-name">${m.nome}</div>
             ${m.dose ? `<div class="med-dose">${m.dose}</div>` : ''}
           </div>
@@ -656,7 +689,7 @@ document.getElementById('addBtn').onclick = () => {
     patternIdx = usosIguais % PATTERNS.length;
   }
 
-  medicamentos.push({nome, cor, qtd, dose, turnos, shapeIdx, patternIdx});
+  medicamentos.push({nome, cor, qtd, dose, turnos, shapeIdx, patternIdx, unidade: 'comprimido'});
   document.getElementById('medNome').value = '';
   document.getElementById('medDose').value = '';
   document.getElementById('medQtd').value = 1;
@@ -704,7 +737,13 @@ document.getElementById('printBtn').onclick = () => {
 // linha com nome + dose reconhecível ("Losartana 50mg", "Amoxicilina 500 mg") marca o
 // INÍCIO de um novo medicamento; linhas seguintes (posologia) são anexadas até a próxima.
 // Prefixo de itemização de receituário (e-SUS: "Comprimido 1. ", "2. ") fica FORA do nome.
-const RX_CABECALHO_MED = /^(?:comprimido\s+)?(?:\d+\.\s*)?(.{2,50}?)\s+(\d+(?:[.,]\d+)?)\s*(mg|mcg|ug|g|ml|ui)\b/i;
+// Lookahead negativo: linha de POSOLOGIA começando com verbo de administração
+// ("DAR 10 ML, 1X AO DIA...", "TOMAR 5 ML, VIA ORAL...") também bate "nome +
+// número + unidade" por acaso — sem a guarda, cada posologia de líquido virava
+// um "medicamento" novo por engano (bug real 2026-09-09, achado testando com
+// receituário pediátrico real: 3 remédios reais + 2 fantasmas "DAR 10ML"/
+// "TOMAR 5ML").
+const RX_CABECALHO_MED = /^(?!(?:dar|tomar|aplicar|usar|administrar|ingerir|pingar|instilar|inalar)\b)(?:comprimido\s+)?(?:\d+\.\s*)?(.{2,50}?)\s+(\d+(?:[.,]\d+)?)\s*(mg|mcg|ug|g|ml|ui)\b/i;
 
 function extrairBlocosMedicamento(texto){
   const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -715,6 +754,15 @@ function extrairBlocosMedicamento(texto){
     if(m){
       if(atual) blocos.push(atual);
       let nome = `${m[1]} ${m[2]}${m[3]}`.replace(/\s+/g,' ').trim();
+      // "Quantidade:" grudado no INÍCIO do nome (bug real 2026-09-09,
+      // achado testando com receituário real do e-SUS de Curitiba): a
+      // tabela da receita tem "Quantidade" numa coluna separada, mas o
+      // pdf.js reconstrói a linha por proximidade vertical (Y) e cola o
+      // rótulo bem antes do nome do remédio na mesma linha reconstruída
+      // ("Quantidade: PARACETAMOL 500 MG COMPRIMIDO   10 comprimido(s)").
+      // Strip genérico de "Rótulo:" solto no início cobre esse caso sem
+      // precisar de uma lista fechada de rótulos conhecidos.
+      nome = nome.replace(/^[a-zà-úçã]+\s*:\s*/i, '');
       nome = nome.replace(/^comprimido\s+/i, '').replace(/^\d+\.\s*/, '').trim();
       atual = { nome, texto: linha };
     } else if(atual){
@@ -729,12 +777,43 @@ function extrairBlocosMedicamento(texto){
 // TOTAL dispensada ("60 comprimidos", plural, avulsa) e a quantidade POR TOMADA ("1
 // comprimido, a cada 12 horas", singular, colada à frequência) — priorizar a segunda,
 // senão todo remédio de uso contínuo vira "60 comprimidos por tomada".
+// Devolve {qtd, unidade}. "unidade" distingue comprimido/cápsula (conta em
+// bolinhas ou numeral, ver renderContagem) de líquido — gotas/ml NUNCA
+// viram bolinha: "35 gotas" desenhado como 35 bolinhas parecia "35
+// comprimidos" e é risco de dose (bug real 2026-09-09, achado testando com
+// receita pediátrica real de Paracetamol em gotas).
+// "CP" é a abreviação de comprimido MAIS comum em posologia real de
+// receituário (achado testando com receitas reais 2026-09-09: "TOMAR 01 CP
+// DE 6/6H") — mas ela só existe na frase de posologia (que fica DEPOIS,
+// junto do verbo "tomar/dar"), enquanto a quantidade TOTAL dispensada
+// ("Quantidade: ... 10 comprimido(s)") vem ANTES no mesmo bloco de texto e
+// usa a palavra por extenso. Sem ancorar no verbo, a busca "primeiro que
+// bater" pegava sempre o total (10) em vez da dose por tomada (1) — bug
+// real que fazia "1 comprimido de 6/6h" virar "10 COMPRIMIDOS" no cartão.
+// Por isso a posologia (verbo + número + unidade) é tentada ANTES do
+// fallback solto, mesmo que a unidade por extenso também exista mais cedo
+// no texto.
 function detectarQtdPorTomada(texto){
-  let m = texto.match(/(\d+)\s*(comprimido|c[áa]psula|drage?a)\b(?!s)\s*,/i);
+  const verbo = /(?:tomar|dar|aplicar|usar|ingerir|pingar)/.source;
+  let m = texto.match(new RegExp(verbo + '\\s+0*(\\d+)\\s*(comprimidos?|c[áa]psulas?|cp\\b|drage?as?)', 'i'));
+  if(m) return { qtd: Math.max(1, Number(m[1])), unidade: 'comprimido' };
+  m = texto.match(new RegExp(verbo + '\\s+0*(\\d+)\\s*(gts|gotas)\\b', 'i'));
+  if(m) return { qtd: Math.max(1, Number(m[1])), unidade: 'gotas' };
+  m = texto.match(new RegExp(verbo + '\\s+0*(\\d+)\\s*ml\\b', 'i'));
+  if(m) return { qtd: Math.max(1, Number(m[1])), unidade: 'ml' };
+
+  // Fallback: nenhuma posologia com verbo reconhecida — usa o primeiro
+  // número+unidade solto no bloco (mesma régua de antes).
+  m = texto.match(/(\d+)\s*(comprimido|c[áa]psula|drage?a)\b(?!s)\s*,/i);
   if(!m) m = texto.match(/(\d+)\s*(comprimido|c[áa]psula|drage?a)\b(?!s)/i);
-  if(!m) m = texto.match(/(\d+)\s*(gts|gotas|ml)\b/i);
-  if(!m) m = texto.match(/(\d+)\s*(comprimidos?|c[áa]psulas?|cp\b|drage?as?)/i);
-  return m ? Math.max(1, Number(m[1])) : 1;
+  if(m) return { qtd: Math.max(1, Number(m[1])), unidade: 'comprimido' };
+  m = texto.match(/(\d+)\s*(gts|gotas)\b/i);
+  if(m) return { qtd: Math.max(1, Number(m[1])), unidade: 'gotas' };
+  m = texto.match(/(\d+)\s*ml\b/i);
+  if(m) return { qtd: Math.max(1, Number(m[1])), unidade: 'ml' };
+  m = texto.match(/(\d+)\s*(comprimidos?|c[áa]psulas?|cp\b|drage?as?)/i);
+  if(m) return { qtd: Math.max(1, Number(m[1])), unidade: 'comprimido' };
+  return { qtd: 1, unidade: 'comprimido' };
 }
 
 // devolve {turnos:[...], alertaExtra:bool} — nunca devolve turnos vazio (fallback seguro:
@@ -787,7 +866,8 @@ function dedupCandidatos(candidatos){
 function parseReceita(texto){
   const brutos = extrairBlocosMedicamento(texto).map(b => {
     const { turnos, alertaExtra } = detectarTurnos(b.texto);
-    return { nomeRaw: b.nome, qtd: detectarQtdPorTomada(b.texto), turnos, alertaExtra, freqTexto: b.texto };
+    const { qtd, unidade } = detectarQtdPorTomada(b.texto);
+    return { nomeRaw: b.nome, qtd, unidade, turnos, alertaExtra, freqTexto: b.texto };
   });
   return dedupCandidatos(brutos);
 }
@@ -799,8 +879,24 @@ function parseReceita(texto){
 // que colidiria com "Nome do medicamento:" se não exigisse ":" colado).
 function extrairNomePaciente(texto){
   const linhas = texto.split(/\r?\n/);
-  const limpar = s => s.split(/\s{2,}|CPF|Data de Nasc|Nasc\.|CNS\b|Cart[ãa]o Nacional|Cart[ãa]o SUS|Cart[ãa]o do SUS/i)[0].trim();
-  const padroesFortes = [/^\s*nome\s+do\s+paciente\s*:\s*(.+)$/i, /^\s*paciente\s*:\s*(.+)$/i];
+  // pdf.js reconstrói a linha por posição vertical (Y) — no e-SUS de
+  // Curitiba real, a coluna "Idade" fica colada bem à direita do nome na
+  // MESMA linha ("Usuário: CELIA PEREIRA DIAS 64"), sem separador nenhum
+  // além do espaço. Cortar dígitos soltos no fim é obrigatório aqui,
+  // achado testando com receituário real (2026-09-09) — nome nunca termina
+  // em número, idade sim.
+  const limpar = s => s
+    .split(/\s{2,}|CPF|Data de Nasc|Nasc\.|CNS\b|Cart[ãa]o Nacional|Cart[ãa]o SUS|Cart[ãa]o do SUS/i)[0]
+    .replace(/\s+\d+\s*$/, '')
+    .trim();
+  // "Usuário:" é o rótulo REAL do e-SUS/PEC (Curitiba) — "Paciente:"/"Nome
+  // do paciente:" não apareceram em nenhuma receita real testada, mantidos
+  // como fallback pra outros municípios/sistemas.
+  const padroesFortes = [
+    /^\s*usu[áa]rio\s*:\s*(.+)$/i,
+    /^\s*nome\s+do\s+paciente\s*:\s*(.+)$/i,
+    /^\s*paciente\s*:\s*(.+)$/i,
+  ];
   for(const linha of linhas){
     for(const rx of padroesFortes){
       const m = linha.match(rx);
@@ -831,7 +927,7 @@ function autoImportarReceita(candidatos){
   importadosAtuais = candidatos.map(c => {
     const n = medicamentos.length;
     const obj = {
-      nome: c.nomeRaw, cor: '#0f766e', qtd: c.qtd, dose: '', turnos: c.turnos,
+      nome: c.nomeRaw, cor: '#0f766e', qtd: c.qtd, dose: '', turnos: c.turnos, unidade: c.unidade,
       shapeIdx: n % SHAPES.length, patternIdx: Math.floor(n / SHAPES.length) % PATTERNS.length,
       _alertaExtra: c.alertaExtra, _freqTexto: c.freqTexto
     };
