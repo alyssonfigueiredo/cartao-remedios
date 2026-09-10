@@ -142,6 +142,35 @@
   }
   #printBtn:hover{filter:brightness(1.06);}
   .hint{font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.5;}
+  .link-tour{background:none; border:none; padding:0; color:var(--brand); font-size:11px; font-weight:700; text-decoration:underline; cursor:pointer; font-family:inherit;}
+  .link-tour:hover{color:var(--brand-strong);}
+
+  /* ---------- tour guiado (pedido 2026-09-10) ----------
+     3 nós soltos anexados ao <body> só enquanto o tour roda, removidos no
+     fim — nada disso mora na folha impressa nem afeta o layout normal.
+     Overlay escuro CAPTURA clique de propósito (obriga a usar os botões
+     do próprio tour em vez de clicar por trás e se perder no meio); o
+     spotlight é só um contorno destacado ao redor do elemento (mais
+     simples e robusto que recortar um "buraco" no overlay com
+     box-shadow gigante, e funciona igual). */
+  #tourOverlay{position:fixed; inset:0; background:rgba(10,23,26,.55); z-index:8999;}
+  #tourSpot{
+    position:absolute; z-index:9000; border-radius:10px; pointer-events:none;
+    box-shadow:0 0 0 3px var(--accent-mint), 0 0 0 7px rgba(127,227,200,.35);
+    transition:top .2s ease, left .2s ease, width .2s ease, height .2s ease;
+  }
+  #tourTip{
+    position:absolute; z-index:9001; width:280px; background:var(--surface);
+    border-radius:var(--r-xl); box-shadow:var(--shadow-cta); padding:16px;
+    font-family:var(--font-sans); transition:top .2s ease, left .2s ease;
+  }
+  #tourTip .tour-titulo{font-size:14px; font-weight:800; color:var(--brand-deep); margin-bottom:6px;}
+  #tourTip .tour-texto{font-size:12.5px; color:var(--text-2); line-height:1.5;}
+  #tourTip .tour-rodape{display:flex; align-items:center; gap:10px; margin-top:14px;}
+  #tourTip .tour-contagem{font-size:11px; color:var(--text-faint); font-weight:700;}
+  #tourTip .tour-pular{background:none; border:none; color:var(--text-muted); font-size:12px; cursor:pointer; padding:6px 4px; font-family:inherit;}
+  #tourTip .tour-prox{background:var(--grad-brand); color:#fff; border:none; border-radius:var(--r-md); padding:7px 14px; font-size:12.5px; font-weight:800; cursor:pointer; font-family:inherit;}
+
   .fit1-label{display:flex; align-items:center; gap:7px; margin:14px 0 0; font-size:12.5px; font-weight:700; text-transform:none; letter-spacing:0; color:var(--brand-strong);}
   .fit1-label input{width:auto;}
   .fit1-aviso{display:none; font-size:11px; color:var(--danger-strong); margin-top:5px; line-height:1.4;}
@@ -254,6 +283,33 @@
   .foot{text-align:center; font-size:9px; color:var(--muted); margin-top:4mm;}
   .foot[contenteditable]:hover{border-bottom:1px dashed #bbb;}
 
+  /* ---------- folha de recorte (pedido 2026-09-10) ----------
+     2ª folha, gerada junto com a receita: o mesmo símbolo de cada remédio
+     repetido em quadrinhos tracejados, grandes o bastante pra recortar
+     com tesoura e colar na caixa/cartela real — reforço físico do "ache o
+     símbolo igual", sem depender do cuidador desenhar à mão. Escondida
+     até ter medicamento (mesma lógica do #sheet) e some inteira do
+     impresso se ficar vazia (`display:none` por padrão, JS só marca
+     `.visivel` quando há remédio). */
+  #sheetRecorte{
+    width:210mm; background:var(--paper); padding:10mm 12mm; margin-top:12px;
+    box-shadow:0 0 0 1px var(--border), var(--shadow-sm);
+    display:none;
+  }
+  #sheetRecorte.visivel{display:block;}
+  .recorte-head{text-align:center; margin-bottom:8mm; padding-bottom:6mm; border-bottom:1px solid var(--border-soft);}
+  .recorte-head h3{font-size:19px; font-weight:800; margin:0 0 2mm; color:var(--ink); font-family:var(--font-sans);}
+  .recorte-head p{font-size:11px; color:var(--muted); max-width:160mm; margin:0 auto; line-height:1.5;}
+  .recorte-grupo{margin-bottom:9mm;}
+  .recorte-grupo:last-child{margin-bottom:0;}
+  .recorte-nome{font-size:12.5px; font-weight:800; text-transform:uppercase; margin-bottom:3.5mm; color:var(--ink); font-family:var(--font-sans);}
+  .recorte-linha{display:flex; gap:6mm; flex-wrap:wrap;}
+  .recorte-item{
+    width:24mm; height:24mm; flex-shrink:0; padding:2mm;
+    border:1.4pt dashed #999; border-radius:2mm;
+    display:flex; align-items:center; justify-content:center;
+  }
+
   /* ---------- importar receita ---------- */
   .import-box{background:var(--surface-brand); border:1px solid var(--border-strong); border-radius:var(--r-lg); padding:12px;}
   .import-box label{margin-top:0;}
@@ -309,6 +365,11 @@
        e o navegador pagina certinho; sem isso a régua "não cortar no meio"
        resolve um bug e expõe outro. */
     #sheet, #turnosOut{ display:block; }
+    /* Folha de recorte sempre em página própria — nunca colada visualmente
+       no fim da receita (ficaria parecendo parte do cartão do paciente,
+       quando na verdade é material de apoio pro cuidador). */
+    #sheetRecorte{ box-shadow:none; width:auto; padding:10mm; margin:0; page-break-before:always; }
+    .recorte-item{ break-inside:avoid; page-break-inside:avoid; }
   }
 </style>
 </head>
@@ -394,7 +455,7 @@
     <div id="fit1PaginaAviso" class="fit1-aviso">Não coube numa página só nem no tamanho mínimo legível — vai sair em mais de uma folha mesmo assim.</div>
 
     <button id="printBtn" type="button">🖨 Imprimir / salvar PDF</button>
-    <p class="hint">Nada fica salvo — ao fechar a página, comece de novo para o próximo paciente.</p>
+    <p class="hint">Nada fica salvo — ao fechar a página, comece de novo para o próximo paciente. <button type="button" id="verTourBtn" class="link-tour">Ver tour de novo</button></p>
   </div>
 
   <!-- ===================== FOLHA IMPRIMIVEL ===================== -->
@@ -410,6 +471,9 @@
 
     <div class="foot" contenteditable="true" id="rodapeOut">Dr. Alysson Dyego de Figueiredo de Araujo - CRM-PR 49769 - Estratégia de Saúde da Família - Agudos do Sul/PR</div>
   </div>
+
+  <!-- ===================== FOLHA DE RECORTE (símbolos pra colar nas caixas) ===================== -->
+  <div id="sheetRecorte"></div>
 
 <!-- OCR (foto) e extração de texto de PDF — só rodam no navegador do usuário, nada sobe pra servidor -->
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
@@ -650,7 +714,35 @@ function render(){
   sheet.classList.toggle('visivel', temMed);
   document.getElementById('controls').classList.toggle('solo', !temMed);
 
+  renderFolhaRecorte(usaCor);
   ajustarParaCaberEmUmaPagina();
+}
+
+// 2ª folha (pedido 2026-09-10): o mesmo símbolo de cada remédio repetido
+// em quadrinhos tracejados grandes, pra recortar com tesoura e colar na
+// caixa/cartela de verdade — reforço físico do "ache o símbolo igual" sem
+// depender do cuidador desenhar à mão. Uma linha por remédio (não
+// deduplicada por forma — mesmo que dois remédios repitam o mesmo símbolo
+// depois do 8º, cada um tem sua própria linha com o próprio nome).
+const RECORTE_COPIAS = 4;
+function renderFolhaRecorte(usaCor){
+  const el = document.getElementById('sheetRecorte');
+  if(medicamentos.length === 0){ el.classList.remove('visivel'); el.innerHTML = ''; return; }
+  el.classList.add('visivel');
+  el.innerHTML = `
+    <div class="recorte-head">
+      <h3>Formas para recortar e colar</h3>
+      <p>Recorte os quadrinhos abaixo e cole o símbolo de cada remédio na caixa ou cartela real — assim o paciente compara o desenho do cartão com o desenho colado na embalagem.</p>
+    </div>
+    ${medicamentos.map(m => `
+      <div class="recorte-grupo">
+        <div class="recorte-nome">${m.nome}</div>
+        <div class="recorte-linha">
+          ${Array(RECORTE_COPIAS).fill(0).map(() => `<div class="recorte-item">${svgGlyph(m.shapeIdx, m.patternIdx, m.cor, usaCor, 90)}</div>`).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
 }
 
 // "Ajustar para caber em 1 página" — encolhe a folha (zoom, afeta símbolo,
@@ -1122,6 +1214,115 @@ document.getElementById('reprocessarBtn').onclick = () => {
 };
 
 render();
+
+/* ---------------- tour guiado (pedido 2026-09-10) ---------------- */
+// Passos apontam pra controles que já existem na tela ANTES de qualquer
+// medicamento ser adicionado (nada aqui depende de render() ter rodado
+// com dados) — o tour ensina a MECÂNICA da ferramenta, não o resultado.
+const TOUR_STEPS = [
+  { sel: '.brand-row', titulo: 'Bem-vindo(a) à Receita Fácil', texto: 'Essa ferramenta monta uma receita em símbolos pra pacientes que não sabem ler. Vamos te mostrar em poucos passos como funciona.' },
+  { sel: '.med-form', titulo: 'Adicione um remédio', texto: 'Escreva o nome e a dose, quantos comprimidos por tomada, e marque o turno (manhã, tarde ou noite).' },
+  { sel: '#medForma', titulo: 'Símbolo automático', texto: 'Cada remédio ganha um símbolo geométrico diferente, escolhido sozinho — mas você pode trocar aqui se preferir.' },
+  { sel: '.import-box', titulo: 'Ou importe a receita pronta', texto: 'Anexe a foto ou o PDF da receita: o sistema tenta reconhecer os remédios e o nome do paciente sozinho.' },
+  { sel: '.fit1-label', titulo: 'Ajustar para 1 página', texto: 'Deixe marcado pra receita tentar caber numa folha só — mais fácil de entregar pro paciente.' },
+  { sel: '#printBtn', titulo: 'Imprimir ou salvar em PDF', texto: 'Ao imprimir, sai junto uma folha extra com os símbolos prontos pra recortar e colar nas caixas dos remédios.' },
+];
+let tourIdx = 0;
+
+function tourMostrarPasso(i){
+  const passo = TOUR_STEPS[i];
+  const el = document.querySelector(passo.sel);
+  if(!el){ tourAvancar(); return; } // elemento sumiu por algum motivo — não trava o tour
+  const tip = document.getElementById('tourTip');
+  const spot = document.getElementById('tourSpot');
+  if(!tip || !spot) return;
+
+  const r = el.getBoundingClientRect();
+  const pad = 8;
+  spot.style.top = (r.top - pad + window.scrollY) + 'px';
+  spot.style.left = (r.left - pad + window.scrollX) + 'px';
+  spot.style.width = (r.width + pad * 2) + 'px';
+  spot.style.height = (r.height + pad * 2) + 'px';
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+  tip.querySelector('.tour-titulo').textContent = passo.titulo;
+  tip.querySelector('.tour-texto').textContent = passo.texto;
+  tip.querySelector('.tour-contagem').textContent = `${i + 1} / ${TOUR_STEPS.length}`;
+  tip.querySelector('.tour-prox').textContent = (i === TOUR_STEPS.length - 1) ? 'Concluir' : 'Próximo';
+
+  // posiciona o tooltip depois do scrollIntoView assentar, senão mede a
+  // posição ANTES da rolagem terminar e o tooltip nasce no lugar errado
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const rAtual = el.getBoundingClientRect();
+    const tipH = tip.offsetHeight, tipW = tip.offsetWidth;
+    let top = rAtual.bottom + pad * 2 + window.scrollY;
+    if(rAtual.bottom + tipH + pad * 2 > window.innerHeight){
+      top = rAtual.top + window.scrollY - tipH - pad * 2;
+    }
+    let left = rAtual.left + window.scrollX;
+    left = Math.min(left, window.scrollX + window.innerWidth - tipW - 12);
+    left = Math.max(12, left);
+    tip.style.top = Math.max(12, top) + 'px';
+    tip.style.left = left + 'px';
+  }));
+}
+
+function tourAvancar(){
+  tourIdx++;
+  if(tourIdx >= TOUR_STEPS.length){ tourFechar(); return; }
+  tourMostrarPasso(tourIdx);
+}
+
+function tourReposicionar(){ tourMostrarPasso(tourIdx); }
+
+function tourFechar(){
+  try{ localStorage.setItem('receita_facil_tour_v1', '1'); }catch(e){}
+  document.getElementById('tourOverlay')?.remove();
+  document.getElementById('tourSpot')?.remove();
+  document.getElementById('tourTip')?.remove();
+  window.removeEventListener('resize', tourReposicionar);
+}
+
+function iniciarTour(){
+  tourFechar(); // garante que uma execução anterior não fique duplicada
+  tourIdx = 0;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'tourOverlay';
+  document.body.appendChild(overlay);
+
+  const spot = document.createElement('div');
+  spot.id = 'tourSpot';
+  document.body.appendChild(spot);
+
+  const tip = document.createElement('div');
+  tip.id = 'tourTip';
+  tip.innerHTML = `
+    <div class="tour-titulo"></div>
+    <div class="tour-texto"></div>
+    <div class="tour-rodape">
+      <span class="tour-contagem"></span>
+      <span style="flex:1"></span>
+      <button type="button" class="tour-pular">Pular</button>
+      <button type="button" class="tour-prox">Próximo</button>
+    </div>
+  `;
+  document.body.appendChild(tip);
+  tip.querySelector('.tour-prox').onclick = tourAvancar;
+  tip.querySelector('.tour-pular').onclick = tourFechar;
+  window.addEventListener('resize', tourReposicionar);
+
+  tourMostrarPasso(0);
+}
+
+document.getElementById('verTourBtn').onclick = iniciarTour;
+
+// Dispara sozinho só na 1ª vez que a página abre neste navegador — depois
+// de um pequeno atraso pra deixar o layout inicial (fontes, logo) assentar
+// antes de medir posição dos elementos.
+try{
+  if(!localStorage.getItem('receita_facil_tour_v1')) setTimeout(iniciarTour, 400);
+}catch(e){}
 </script>
 </body>
 </html>

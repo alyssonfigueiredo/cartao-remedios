@@ -364,6 +364,47 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Tour guiado + folha de recorte (2026-09-10)
+Dois pedidos na mesma tarefa, ambos sem relação de código entre si:
+
+**Tour guiado.** Dispara sozinho na 1ª visita (`localStorage['receita_facil_tour_v1']`,
+mesmo padrão do `soa_tour_v1` do soaperando) — 6 passos apontando pra
+controles que já existem na tela ANTES de qualquer medicamento (nada
+depende de `render()` ter rodado com dados): marca (`.brand-row`),
+formulário de remédio (`.med-form`), símbolo automático (`#medForma`),
+importar receita (`.import-box`), ajustar pra 1 página (`.fit1-label`),
+imprimir (`#printBtn`). 3 nós soltos (`#tourOverlay`, `#tourSpot`,
+`#tourTip`) anexados ao `<body>` só enquanto roda, removidos no fim —
+nunca tocam a folha impressa. `#tourOverlay` (escuro, z-index 8999)
+CAPTURA clique de propósito — obriga a usar os botões do próprio tour em
+vez de clicar por trás e se perder no meio de um passo. `#tourSpot` é só
+um CONTORNO destacado ao redor do elemento (`box-shadow`, sem recortar
+buraco no overlay com a técnica de `box-shadow:0 0 0 9999px`) — mais
+simples de acertar e funciona igual pro efeito de "olha aqui". Tooltip
+reposiciona depois do `scrollIntoView` assentar (2x
+`requestAnimationFrame` — 1x não bastava, a rolagem suave ainda estava em
+andamento quando a 1ª medição rodava) e vira pra cima quando não cabe
+embaixo. Botão "Ver tour de novo" no rodapé do painel (`#verTourBtn`)
+chama `iniciarTour()` direto, ignorando a flag do localStorage — mesmo
+padrão do `window._tourReset()` do soaperando. Validado com Playwright:
+avançar os 6 passos até o fim remove os 3 nós e grava a flag.
+
+**Folha de recorte.** 2ª folha (`#sheetRecorte`), gerada junto da receita
+sempre que há medicamento — o mesmo símbolo de cada remédio repetido em
+`RECORTE_COPIAS` (4) quadrinhos tracejados de 24mm, grandes o bastante pra
+recortar com tesoura e colar na caixa/cartela real. Não deduplicada por
+forma: cada remédio tem sua própria linha com nome + 4 cópias do próprio
+símbolo, mesmo que dois remédios raros repitam o mesmo símbolo depois do
+8º (limite de `SHAPES.length`). `page-break-before:always` no
+`@media print` — nunca fica colada visualmente ao fim da receita do
+paciente (é material de apoio pro cuidador, não parte do documento que o
+paciente recebe). Escondida (`display:none`) até existir medicamento,
+mesma lógica do `#sheet`; `renderFolhaRecorte(usaCor)` chamada dentro de
+`render()`, precisa do `usaCor` pra desenhar os símbolos com a cor certa
+quando "impressora colorida" está marcado. Validado com Playwright:
+screenshot da folha isolada + PDF de impressão real conferindo que vira
+página 2 separada.
+
 ## Contagem: bolinha → traço → repetir a própria forma (2026-09-09, 3 rodadas)
 Linha do tempo da mesma tarde: (1) bolinha (`.pip`, redonda) — usuário
 achou que parecia "mais um símbolo geométrico" ao lado do círculo/
