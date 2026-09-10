@@ -364,6 +364,34 @@ topo da folha (`.obs`); repetir por cartão era ruído.
 Validado com screenshot real via Playwright (`#sheet` inteiro) — ver
 hierarquia visual antes de fechar, não só o HTML gerado.
 
+## Contagem: repetição SEM encolher + nome maior (2026-09-10)
+Correção da rodada anterior no mesmo dia (ver "bolinha → traço → repetir
+a própria forma" abaixo): a versão "repete a forma" ainda ENCOLHIA o
+tamanho conforme a quantidade subia (`CONTAGEM_TAMANHO_MM` era um mapa
+1→12mm … 5→7mm), o que criava exatamente o problema que se queria evitar
+desde a rodada da bolinha — virava uma "legenda" pequena ao lado do
+símbolo grande de identificação, dois tamanhos do mesmo símbolo na tela.
+Pedido do usuário: **todas as repetições no mesmo tamanho, sempre** — com
+1 só, uma figura única centralizada e em destaque (a mesma que já existia
+antes de existir contagem nenhuma); com mais, a forma NÃO diminui, só
+repete, quebrando pra 2ª linha dentro do cartão se não couber numa só
+(flex-wrap; `.turno-grid` já tinha `align-content/align-items:flex-start`
+do bug do divisor, então a quebra não reintroduz aquele problema).
+`CONTAGEM_TAMANHO_MM` virou uma constante fixa (17mm) em vez de mapa por
+quantidade. Consequência direta: o símbolo "grande de identificação"
+(`.glyph-wrap`, 90px/26mm, vivia dentro de um `.top-row` ao lado da
+mancha "cor da caixa") ficou redundante — a forma repetida agora faz os
+dois papéis sozinha. Removidos `.top-row`/`.glyph-wrap` do CSS e do
+`render()`; `.cor-caixa-box` deixou de dividir linha com o símbolo e virou
+elemento centralizado sozinho, ACIMA da fileira de formas (`margin:0 auto
+3mm`). **Nome do remédio maior** (`.med-name`, 13px→16px; `.med-dose`
+10px→11px, contagem-numero 19px→22px/rótulo 8.5px→9.5px) — pedido à
+parte, mesmo motivo geral do cartão inteiro: parte de quem precisa da
+ferramenta não é analfabeta, tem baixa visão, e letra pequena é barreira
+igual à falta de leitura. Validado com Playwright: 1/2/3/5 comprimidos
+(mesmo tamanho, quebra de linha sem encolher) e 7 (cai no numeral, sem
+mudança de comportamento nessa faixa).
+
 ## Tour guiado + folha de recorte (2026-09-10)
 Dois pedidos na mesma tarefa, ambos sem relação de código entre si:
 
